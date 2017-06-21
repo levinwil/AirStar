@@ -41,7 +41,7 @@ Return
 (in order) precision, recall, F1
 
 """
-def precision_recall_f1(predictions, labels, width = 50):
+def precision_recall_f1(predictions, labels, width = 100):
     true_positives = 0
     true_negatives = 0
     false_positives = 0

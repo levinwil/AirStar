@@ -189,7 +189,7 @@ if __name__ == "__main__":
     #loading the data
     import pickle
     #NOTE: you'll probably have to change the file path to get this unit test to run
-    train_data = pickle.load(open("/Users/williamlevine/Downloads/Mixture-Trial-4-And-Fast-Richard-Trial-1.DatLabl"))
+    train_data = pickle.load(open("/Users/williamlevine/Downloads/OpenBCI-RAW-Mixture-Trial-4.DatLabl"))
     train_labels = train_data[1]
     train_x = np.array([train_data[0]])
 

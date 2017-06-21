@@ -81,7 +81,7 @@ data : 2d array
     the data you want to be filtered
 order : Int
     the order of the high pass filter
-frequency : Double (0 to 1)
+critical_freq : Double (0 to 1)
     the critical frequency. Is normalized between 0 and 1, where 1 is the
     Nyquist frequency (and thus will pass the original signal) and 0 will pass
     no signal
@@ -91,10 +91,10 @@ ____________
 data : 2d array
     the normalized data
 '''
-def highPass(data, order = 1, frequency = .1):
+def highPass(data, order = 1, critical_freq = .1):
     ret = []
     def helper(d):
-        B, A = signal.butter(order, frequency, btype = 'highpass', output='ba')
+        B, A = signal.butter(order, critical_freq, btype = 'highpass', output='ba')
         return signal.filtfilt(B,A, d)
     for i in range(len(data)):
         ret.append(helper(data[i]))
@@ -113,7 +113,7 @@ data : 2d array
     the data you want to be filtered
 order : Int
     the order of the high pass filter
-frequency : Double (0 to 1)
+critical_freq : Double (0 to 1)
     the critical frequency. Is normalized between 0 and 1, where 1 is the
     Nyquist frequency (and thus will pass the original signal) and 0 will pass
     no signal
@@ -123,10 +123,10 @@ ____________
 data : 2d array
     the normalized data
 '''
-def lowPass(data, order = 1, frequency = .1):
+def lowPass(data, order = 1, critical_freq = .1):
     ret = []
     def helper(d):
-        B, A = signal.butter(order, frequency, btype = 'lowpass', output='ba')
+        B, A = signal.butter(order, critical_freq, btype = 'lowpass', output='ba')
         return signal.filtfilt(B,A, d)
     for i in range(len(data)):
         ret.append(helper(data[i]))
@@ -152,10 +152,10 @@ ____________
 data : 2d array
     the filtered data
 '''
-def bandStop(data, freqmin = 50, freqmax = 60):
+def bandStop(data, freq_min = 50, freq_max = 60):
     ret = []
     def helper(d):
-        return bandstop(d, freqmin = 55, freqmax = 65, df = 200)
+        return bandstop(d, freqmin = freq_min, freqmax = freq_max, df = 200)
     for i in range(len(data)):
         ret.append(helper(data[i]))
     return ret
