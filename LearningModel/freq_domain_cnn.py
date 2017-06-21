@@ -124,8 +124,8 @@ class CNN(object):
     def predict_discrete(self, X):
         #reshape to be sqrt(window) x sqrt(window)
         X = np.array(X).reshape(X.shape[1],
-                                np.sqrt(self.window),
-                                np.sqrt(self.window),
+                                int(np.sqrt(self.window)),
+                                int(np.sqrt(self.window)),
                                 1)
         #get prediction probabilities
         probabilities = self.model.predict(X)
