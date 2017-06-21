@@ -1,10 +1,10 @@
-# Motion-Tracking
+# AirStar
 
 ## Goals
 The following goals are very rough and subject to change:  
-**Current Goal** - train a model to classify movement of the hand and arm for any application you could possibly think of  
-**Long-Term Goal** - train a model to classify full-body movement  
-**Alternate Goal** - train an EEG-fed model to detect bipolar episodes and/or sentiment/emotion   
+**Current Goal** - train a model to classify movement of the hand and arm for any application you could possibly think of using EMG signals  
+**Long-Term Goal** - train a model to classify full-body movement using EMG signals
+**Alternate Goal** - train a model to detect bipolar episodes and/or sentiment/emotion using EEG signals (or possibly EMG depending on how much noise is introduced by the skull for EEG)
 
 ## Dependencies
 numpy  
