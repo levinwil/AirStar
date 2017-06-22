@@ -66,7 +66,7 @@ data : 2d array
 '''
 def normalize(data):
     for i in range(len(data)):
-        data[i] = (data[i] - np.mean(data[i]))
+        data[i] = (data[i] - np.mean(data[i]))/np.std(data[i])
     return data
 
 '''

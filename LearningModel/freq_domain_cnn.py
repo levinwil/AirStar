@@ -5,7 +5,6 @@ from keras.layers import Conv2D, MaxPooling2D
 from keras import backend as K
 import sys
 from utils import train_test_split, precision_recall_f1
-sys.path.append("../pre-processing")
 import numpy as np
 
 ''' A general model for EMG signal classification'''
@@ -41,10 +40,10 @@ class CNN(object):
         the labels
     numClasses : int
         the number of classes you'd like to predict
-    testSize : Double
+    test_size : Double
         the proportion of data you want to set aside for testing
         (MUST BE BETWEEN 0 and 1)
-    batchSize : int
+    batch_size : int
         the size of the batches used for gradient descent optimization
     epochs : int
         the number of iterations in which the model evaluates a batch to
@@ -54,11 +53,13 @@ class CNN(object):
     self : object
         self is fitted
     """
-    def fit(self, X, labels, numClasses=2, testSize=.25, batchSize=36, epochs=40):
+    def fit(self, X, labels, numClasses=2, test_size=.25, batch_size=36, epochs=40):
+        X = np.array(X)
+        labels = np.array(labels)
         #splitting into training and testing
         x_train, x_test, y_train, y_test = train_test_split(X,
                                                             labels,
-                                                            testSize = testSize)
+                                                            test_size = test_size)
 
         # input image dimensions
         img_rows, img_cols = int(np.sqrt(self.window)), int(np.sqrt(self.window))
@@ -98,7 +99,7 @@ class CNN(object):
                       metrics=['accuracy'])
 
         model.fit(x_train, y_train,
-                  batch_size=batchSize,
+                  batch_size=batch_size,
                   epochs=epochs,
                   verbose=1,
                   validation_data=(x_test, y_test))
@@ -172,10 +173,10 @@ class CNN(object):
     ____________
     void
     '''
-    def evaluate(self, X, labels):
+    def evaluate(self, X, labels, width = 50):
         predictions = self.predict_discrete(X)
         print 'Performance on test data: '
-        precision_recall_f1(predictions, labels)
+        precision_recall_f1(predictions, labels, width)
 
 
 
@@ -199,8 +200,8 @@ if __name__ == "__main__":
     cnn.fit(train_x, train_labels, epochs = epochs)
 
     #validation on a completely different data set
-    test_data = pickle.load(open("/Users/williamlevine/Downloads/OpenBCI-RAW-2017-Fast-Richard-Trial-1.DatLabl"))
+    test_data = pickle.load(open("/Users/williamlevine/Downloads/OpenBCI-RAW-2017-Contract-Uncontract-5-Seconds-Trial-1.DatLabl"))
     test_labels = test_data[1]
     test_x = np.array([test_data[0]])
 
-    cnn.evaluate(test_x, test_labels)
+    cnn.evaluate(test_x, test_labels, 100)

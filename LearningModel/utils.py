@@ -11,18 +11,18 @@ Parameters
 ---------
 array-like data           --- Either an np.ndarray or a pd.DataFrame containing the data
 array-like labels         --- Either an np.ndarray or a pd.DataFrame containing the labels
-numeric-type testSize    --- the proportion of the data & labels to set aside for testing purposes
+numeric-type test_size    --- the proportion of the data & labels to set aside for testing purposes
 
 Return
 ------
 (in order) training_x, testing_x, training_y, testing_y
 
 """
-def train_test_split(data, labels, testSize = 0.25):
-    train_x = data[:, 0: int(len(data[0])*(1 - testSize)), :]
-    test_x = data[:, int (len(data[0])*(1 - testSize)):, :]
-    train_y = labels[0: int(len(labels)*(1 - testSize))]
-    test_y = labels[int(len(labels)*(1 - testSize)):]
+def train_test_split(data, labels, test_size = 0.25):
+    train_x = data[:, 0: int(len(data[0])*(1 - test_size)), :]
+    test_x = data[:, int (len(data[0])*(1 - test_size)):, :]
+    train_y = labels[0: int(len(labels)*(1 - test_size))]
+    test_y = labels[int(len(labels)*(1 - test_size)):]
     return train_x, test_x, train_y, test_y
 
 """
@@ -54,11 +54,11 @@ def precision_recall_f1(predictions, labels, width = 100):
             upper_bound = width
             if (i + upper_bound > len(labels)):
                 upper_bound = len(predictions) - 1 - i
-            ra = [1 for j in range(lower_bound, upper_bound) if labels[i + j] == 1]
+	    ra = [1 for j in range(lower_bound, upper_bound) if labels[i + j] == 1]
             if (np.sum(ra) > 0) :
                 true_positives += 1
             else:
-                false_negatives +=1
+                false_positives +=1
     for i in range(len(labels)):
         if labels[i] == 1:
             lower_bound = -1 * width
@@ -69,7 +69,7 @@ def precision_recall_f1(predictions, labels, width = 100):
                 upper_bound = len(predictions) - 1 - i
             ra = [i for j in range(lower_bound, upper_bound) if predictions[i + j] == 1]
             if (np.sum(ra) <= 0) :
-                false_positives +=1
+                false_negatives +=1
     precision = true_positives * 1.0 / (true_positives + false_positives)
     recall = true_positives * 1.0 / (true_positives + false_negatives)
     F1 = 2 * precision * recall / (precision + recall)
