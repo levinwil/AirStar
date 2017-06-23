@@ -18,11 +18,17 @@ Return
 (in order) training_x, testing_x, training_y, testing_y
 
 """
-def train_test_split(data, labels, test_size = 0.25):
-    train_x = data[:, 0: int(len(data[0])*(1 - test_size)), :]
-    test_x = data[:, int (len(data[0])*(1 - test_size)):, :]
-    train_y = labels[0: int(len(labels)*(1 - test_size))]
-    test_y = labels[int(len(labels)*(1 - test_size)):]
+def train_test_split(data, labels, test_size = 0.25, channels_present = True):
+    if channels_present:
+        train_x = data[:, 0: int(len(data[0])*(1 - test_size)), :]
+        test_x = data[:, int (len(data[0])*(1 - test_size)):, :]
+        train_y = labels[0: int(len(labels)*(1 - test_size))]
+        test_y = labels[int(len(labels)*(1 - test_size)):]
+    else:
+        train_x = data[0: int(len(data)*(1 - test_size)), :]
+        test_x = data[int (len(data)*(1 - test_size)):, :]
+        train_y = labels[0: int(len(labels)*(1 - test_size))]
+        test_y = labels[int(len(labels)*(1 - test_size)):]
     return train_x, test_x, train_y, test_y
 
 """
@@ -41,34 +47,37 @@ Return
 (in order) precision, recall, F1
 
 """
-def precision_recall_f1(predictions, labels, width = 100):
+def precision_recall_f1(predictions, labels, width = 100, label_value = 1):
     true_positives = 0
     true_negatives = 0
     false_positives = 0
     false_negatives = 0
     for i in range(len(predictions)):
-        if predictions[i] == 1:
+        if predictions[i] == label_value:
             lower_bound = -1 * width
             if (i + lower_bound < 0):
                 lower_bound = 0
             upper_bound = width
             if (i + upper_bound > len(labels)):
                 upper_bound = len(predictions) - 1 - i
-	    ra = [1 for j in range(lower_bound, upper_bound) if labels[i + j] == 1]
+	    ra = [1 for j in range(lower_bound, upper_bound) if labels[i + j] == label_value]
             if (np.sum(ra) > 0) :
                 true_positives += 1
             else:
                 false_positives +=1
     for i in range(len(labels)):
-        if labels[i] == 1:
+        if labels[i] == label_value:
             lower_bound = -1 * width
             if (i + lower_bound < 0):
                 lower_bound = 0
             upper_bound = width
             if (i + upper_bound > len(predictions)):
                 upper_bound = len(predictions) - 1 - i
-            ra = [i for j in range(lower_bound, upper_bound) if predictions[i + j] == 1]
-            if (np.sum(ra) <= 0) :
+            ra = []
+            for j in range(lower_bound, upper_bound):
+                if predictions[i + j] == label_value:
+                    ra.append(1)
+            if (len(ra) == 0) :
                 false_negatives +=1
     precision = true_positives * 1.0 / (true_positives + false_positives)
     recall = true_positives * 1.0 / (true_positives + false_negatives)

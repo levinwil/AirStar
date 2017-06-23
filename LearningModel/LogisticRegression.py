@@ -24,18 +24,16 @@ NOTE: if you get some freaky, error, it's probably in n_jobs. If n_jobs = -1,
 the logistic regression model classifier trains itself in parallel using all its cores,
 which sometimes gives you some pretty freaky errors. So, just set n_jobs = 1.
 '''
-def analyzeLR(data, labels, label_value = 1, test_size = 0.25):
-    # if there is 1 feature,
-    if len(np.array(data).shape) == 1:
-        data = np.reshape(data, (-1, 1))
+def analyzeLR(data, labels, label_value = 1, test_size = 0.25, channels_present = False):
     #split the data
-    x_train, x_test, y_train, y_test = train_test_split(data, labels, test_size = test_size)
+    x_train, x_test, y_train, y_test = train_test_split(data, labels, test_size = test_size, channels_present = channels_present)
     #generate the logistic regression model
     lr = generateLR(x_train, y_train)
     #predict the remaining data using the generated logistic regression model
     predictions = getPredictions(x_test, lr)
+    print predictions
 
-    precision_recall_f1(y_test, predictions)
+    precision_recall_f1(predictions, y_test)
     return lr
 
 
@@ -52,6 +50,9 @@ Outputs
 lr: the fitted logistic regression model
 '''
 def generateLR(data, labels):
+    #if there is only 1 feature
+    if len(np.array(data).shape) == 1:
+        data = np.reshape(data, (-1, 1))
     lr = LogisticRegression()
     lr.fit(data, labels)
     return lr
@@ -67,4 +68,7 @@ Outputs
 lr: the predictions
 '''
 def getPredictions(data, lr):
+    #if there is only 1 feature
+    if len(np.array(data).shape) == 1:
+        data = np.reshape(data, (-1, 1))
     return lr.predict(data)
