@@ -34,8 +34,8 @@ def prepare_data(filePath, num_channels = 4, filter_order = 2,
                  high_pass_critical_freq = .1, low_pass_critical_freq = .1,
                  band_stop_min_freq = 50, band_stop_max_freq = 60,
                  reject_z_cutoff = 2.5, reject_divide_factor = 4,
-                 window = 36, return_freq = True,
-                 return_freq_std_window = False, return_multi_feat= False):
+                 window = 36, return_freq = False,
+                 return_freq_std_window = False, return_multi_feat= True):
     data = parse(filePath, num_channels)
     if do_high_pass:
         data = highPass(data, filter_order, high_pass_critical_freq)
@@ -43,19 +43,21 @@ def prepare_data(filePath, num_channels = 4, filter_order = 2,
         data = lowPass(data, filter_order, low_pass_critical_freq)
     data = bandStop(data, band_stop_min_freq, band_stop_max_freq)
     data = peakReject(data, reject_z_cutoff, reject_divide_factor, window)
-    if return_freq:
+    if return_freq or return_multi_feat:
         data = FFT(data, window)
-        if (return_freq_std_window or return_freq_std):
+        if return_freq:
+            return data
+        if (return_freq_std_window or return_multi_feat):
             two_dimension_data = np.zeros((len(data), len(data[0]), 3))
-            if return_freq_std:
+            if return_multi_feat:
                 for j in range(len(data)):
                     for i in range(len(data[j])):
-                        two_dimension_data[j][i][0] = np.std(data[j][i])
+                        two_dimension_data[j][i][0] = np.max(data[j][i])
                     for k in range(2*window, len(data[j])):
                         two_dimension_data[j][k][1] = ((two_dimension_data[j][k][0] - two_dimension_data[j][k - 2*window][0])/(2*window))
                         local = two_dimension_data[j][k - window : k, 0]
                         two_dimension_data[j][k][2] = (two_dimension_data[j][k][0] - np.mean(local))
-                    return two_dimension_data
+                return two_dimension_data
             else:
                 two_dimension_data = np.zeros((len(data), len(data[3]), window))
                 for j in range(len(data)):
