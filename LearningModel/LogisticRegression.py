@@ -68,7 +68,37 @@ Outputs
 lr: the predictions
 '''
 def getPredictions(data, lr):
+    verification_window = 5
+    continuity_window = 25
     #if there is only 1 feature
     if len(np.array(data).shape) == 1:
         data = np.reshape(data, (-1, 1))
-    return lr.predict(data)
+    predictions =  lr.predict(data)
+    for i in range(verification_window, len(predictions)):
+        std = np.std([predictions[i - verification_window: i]])
+        if std > 0.5:
+            for j in range(verification_window):
+                predictions[i - j] = -1
+        if predictions[i] == 1:
+            previous_occurence = predictions[i]
+            for j in range(continuity_window):
+                if predictions[i - j] == 1:
+                    previous_occurence = i - j
+                elif predictions[i - j] == -1:
+                    break
+                    break
+            if (i - previous_occurence) < continuity_window:
+                for j in range(i - previous_occurence):
+                    predictions[i - j] = 1
+        if predictions[i] == -1:
+            previous_occurence = predictions[i]
+            for j in range(continuity_window):
+                if predictions[i - j] == -1:
+                    previous_occurence = i - j
+                elif predictions[i - j] == 1:
+                    break
+                    break
+            if (i - previous_occurence) < continuity_window:
+                for j in range(i - previous_occurence):
+                    predictions[i - j] = -1
+    return predictions

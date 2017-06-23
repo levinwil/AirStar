@@ -2,8 +2,11 @@ import keras
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, MaxPooling2D
+from keras.layers.local import LocallyConnected2D
 from keras import backend as K
 import sys
+sys.path.append("../pre-processing")
+from prepare_data import prepare_data
 from utils import train_test_split, precision_recall_f1
 import numpy as np
 
@@ -48,21 +51,27 @@ class CNN(object):
     epochs : int
         the number of iterations in which the model evaluates a batch to
         optimize
+    channels_present : boolean
+        if you have channels or not
     Return
     ------
     self : object
         self is fitted
     """
-    def fit(self, X, labels, numClasses=2, test_size=.25, batch_size=36, epochs=40):
+    def fit(self, X, labels, numClasses=2, test_size=.25, batch_size=1000,
+            epochs=28, channels_present = True):
         X = np.array(X)
         labels = np.array(labels)
         #splitting into training and testing
         x_train, x_test, y_train, y_test = train_test_split(X,
                                                             labels,
-                                                            test_size = test_size)
+                                                            test_size = test_size,
+                                                            channels_present = channels_present)
+        print np.array(x_train).shape
 
         # input image dimensions
         img_rows, img_cols = int(np.sqrt(self.window)), int(np.sqrt(self.window))
+
 
         #some reshaping
         x_test = x_test.reshape(x_test.shape[1], img_rows, img_cols, 1)
@@ -83,15 +92,19 @@ class CNN(object):
 
         #the CNN model
         model = Sequential()
-        model.add(Conv2D(32, kernel_size=(3, 3),
+        model.add(Conv2D(64, kernel_size=(3, 3),
                          activation='relu',
                          input_shape=input_shape))
         model.add(Conv2D(64, (3, 3), activation='relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Dropout(0.25))
-        model.add(Flatten())
-        model.add(Dense(128, activation='relu'))
+        model.add(LocallyConnected2D(64, (1, 1), activation='relu'))
+        model.add(LocallyConnected2D(64, (1, 1), activation='relu'))
         model.add(Dropout(0.5))
+        model.add(Flatten())
+        model.add(Dense(512, activation='relu'))
+        model.add(Dropout(0.5))
+        model.add(Dense(512, activation='relu'))
+        model.add(Dropout(0.5))
+        model.add(Dense(128, activation='relu'))
         model.add(Dense(numClasses, activation='softmax'))
 
         model.compile(loss=keras.losses.categorical_crossentropy,
@@ -123,11 +136,12 @@ class CNN(object):
         discrete values (either a 0 or a 1 at each time point)
     '''
     def predict_discrete(self, X):
+        X = np.array(X)
         #reshape to be sqrt(window) x sqrt(window)
-        X = np.array(X).reshape(X.shape[1],
-                                int(np.sqrt(self.window)),
-                                int(np.sqrt(self.window)),
-                                1)
+        X = X.reshape(X.shape[1],
+                      int(np.sqrt(self.window)),
+                      int(np.sqrt(self.window)),
+                      1)
         #get prediction probabilities
         probabilities = self.model.predict(X)
         #for each time step, find if it's more likely to be class 1 or 0
@@ -183,25 +197,38 @@ class CNN(object):
 #unit test
 if __name__ == "__main__":
     #variables that you can play around with
-    window = 36 #must be a perfect square
-    epochs = 12 #you probably want to keep this between 0 and 100 if you want it running < 5 minutes
+    window = 144 #must be a perfect square
+    epochs = 28 #you probably want to keep this between 0 and 100 if you want it running < 5 minutes
+    batch_size = 10000
 
 
     #loading the data
     import pickle
+    import matplotlib.pyplot as plt
     #NOTE: you'll probably have to change the file path to get this unit test to run
-    train_data = pickle.load(open("/Users/williamlevine/Downloads/OpenBCI-RAW-Mixture-Trial-4.DatLabl"))
+    #validation on a completely different data set
+    train_data = pickle.load(open("/Users/williamlevine/Downloads/6-seconds-trial-1.MultFeat"))
     train_labels = train_data[1]
-    train_x = np.array([train_data[0]])
+    train_x = np.array(train_data[0])
+    train_x = [prepare_data("/Users/williamlevine/Downloads/OpenBCI-RAW-Contract-Uncontract-6-seconds-trial-1.txt",
+                            return_freq_std_window = True,
+                            window = window)[3][:-1006]]
 
 
     #running the CNN and producing results
     cnn = CNN(window = window)
-    cnn.fit(train_x, train_labels, epochs = epochs)
+    cnn.fit(train_x, train_labels, epochs = epochs, batch_size = batch_size)
 
     #validation on a completely different data set
-    test_data = pickle.load(open("/Users/williamlevine/Downloads/OpenBCI-RAW-2017-Contract-Uncontract-5-Seconds-Trial-1.DatLabl"))
+    #validation on a completely different data set
+    test_data = pickle.load(open("/Users/williamlevine/Downloads/mixture-trial-4.MultFeat"))
     test_labels = test_data[1]
-    test_x = np.array([test_data[0]])
-
-    cnn.evaluate(test_x, test_labels, 100)
+    test_x = np.array(test_data[0])
+    test_x = [prepare_data("/Users/williamlevine/Downloads/OpenBCI-RAW-Mixture-Trial-4.txt",
+                            return_freq_std_window = True,
+                            window = window)[3]]
+    cnn.evaluate(test_x, test_labels, window = window)
+    predictions = cnn.predict_discrete(test_x)
+    plt.plot([predictions[i] * 3 for i in range(len(predictions))])
+    plt.plot(test_x[0])
+    plt.show()

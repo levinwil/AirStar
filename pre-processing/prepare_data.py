@@ -35,7 +35,7 @@ def prepare_data(filePath, num_channels = 4, filter_order = 2,
                  band_stop_min_freq = 50, band_stop_max_freq = 60,
                  reject_z_cutoff = 2.5, reject_divide_factor = 4,
                  window = 36, return_freq = False,
-                 return_freq_std_window = False, return_multi_feat= True):
+                 return_freq_std_window = False, return_multi_feat= False):
     data = parse(filePath, num_channels)
     if do_high_pass:
         data = highPass(data, filter_order, high_pass_critical_freq)
@@ -43,13 +43,13 @@ def prepare_data(filePath, num_channels = 4, filter_order = 2,
         data = lowPass(data, filter_order, low_pass_critical_freq)
     data = bandStop(data, band_stop_min_freq, band_stop_max_freq)
     data = peakReject(data, reject_z_cutoff, reject_divide_factor, window)
-    if return_freq or return_multi_feat:
+    if return_freq or return_multi_feat or return_freq_std_window:
         data = FFT(data, window)
         if return_freq:
             return data
         if (return_freq_std_window or return_multi_feat):
-            two_dimension_data = np.zeros((len(data), len(data[0]), 3))
             if return_multi_feat:
+                two_dimension_data = np.zeros((len(data), len(data[0]), 3))
                 for j in range(len(data)):
                     for i in range(len(data[j])):
                         two_dimension_data[j][i][0] = np.max(data[j][i])
@@ -59,12 +59,13 @@ def prepare_data(filePath, num_channels = 4, filter_order = 2,
                         two_dimension_data[j][k][2] = (two_dimension_data[j][k][0] - np.mean(local))
                 return two_dimension_data
             else:
-                two_dimension_data = np.zeros((len(data), len(data[3]), window))
+                two_dimension_data = np.zeros((len(data), len(data[0]), window))
                 for j in range(len(data)):
                     for k in range(len(data[j])):
                         if k < window:
-                            two_dimension_data[j][k] = [0] * window
+                            two_dimension_data[j][k] = [0 for _ in range(window)]
                         else:
-                            two_dimension_data[j][k] = data[j][k - window : k]
+                            std = [np.std(data[j][l]) for l in range(k - window, k)]
+                            two_dimension_data[j][k] = std
                 data = two_dimension_data
     return np.array(data)
