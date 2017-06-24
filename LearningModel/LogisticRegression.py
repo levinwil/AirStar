@@ -15,8 +15,12 @@ class LR(object):
     model : keras model
         The model after fitting
     '''
-    def __init__(self):
-        self.model = None
+    def __init__(self, data = None, labels = None):
+        if (isinstance(data, list) or isinstance(data, np.ndarray)) and \
+           (isinstance(labels, list) or isinstance(labels, np.ndarray)):
+            self.fit(data, labels)
+        else:
+            self.model = None
 
     '''
     A basic logistic regression model classifier
@@ -105,16 +109,15 @@ if __name__ == "__main__":
     #NOTE: you'll probably have to change the file path to get this unit test to run
     train_data = pickle.load(open("/Users/williamlevine/Downloads/6-seconds-trial-1.MultFeat"))
     train_labels = np.abs(train_data[1])
-    train_x = np.array(train_data[0])
+    train_x = train_data[0]
 
 
-    #running the CNN and producing results
-    lr = LR()
-    lr.fit(train_x, train_labels)
+    #running the LR and producing results
+    lr = LR(train_x, train_labels)
 
     #validation on a completely different data set
     test_data = pickle.load(open("/Users/williamlevine/Downloads/mixture-trial-4.MultFeat"))
     test_labels = np.abs(test_data[1])
-    test_x = np.array(test_data[0])
+    test_x = test_data[0]
 
     lr.evaluate(test_x, test_labels)
