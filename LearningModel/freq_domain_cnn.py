@@ -2,12 +2,9 @@ import keras
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, MaxPooling2D
-from keras.layers.local import LocallyConnected2D
 from keras import backend as K
-import sys
-sys.path.append("../pre-processing")
-from prepare_data import prepare_data
 from utils import train_test_split, precision_recall_f1
+import matplotlib.pyplot as plt
 import numpy as np
 
 ''' A general model for EMG signal classification'''
@@ -51,37 +48,20 @@ class CNN(object):
     epochs : int
         the number of iterations in which the model evaluates a batch to
         optimize
-    channels_present : boolean
-        if you have channels or not
     Return
     ------
     self : object
         self is fitted
     """
-    def fit(self, X, labels, numClasses=2, test_size=.25, batch_size=1000,
-            epochs=28, channels_present = True):
-        X = np.array(X)
-        labels = np.array(labels)
+    def fit(self, X, labels, numClasses=2, test_size=.25, batch_size=36, epochs=40):
         #splitting into training and testing
         x_train, x_test, y_train, y_test = train_test_split(X,
                                                             labels,
-                                                            test_size = test_size,
-                                                            channels_present = channels_present)
-        print np.array(x_train).shape
-
-        # input image dimensions
-        img_rows, img_cols = int(np.sqrt(self.window)), int(np.sqrt(self.window))
+                                                            test_size = test_size)
 
 
-        #some reshaping
-        x_test = x_test.reshape(x_test.shape[1], img_rows, img_cols, 1)
-        x_train = x_train.reshape(x_train.shape[1], img_rows, img_cols, 1)
-        input_shape = (img_rows, img_cols, 1)
-
-        x_train = x_train
-        x_test = x_test.astype('float32')
-        x_train /= 255
-        x_test /= 255
+        x_test = x_test.astype('float32')[0]
+        x_train = ((x_train - np.mean(x_train))/np.std(x_train))[0]
         print(x_train.shape[0], 'train samples')
         print(x_test.shape[0], 'test samples')
 
@@ -92,20 +72,11 @@ class CNN(object):
 
         #the CNN model
         model = Sequential()
-        model.add(Conv2D(64, kernel_size=(3, 3),
-                         activation='relu',
-                         input_shape=input_shape))
-        model.add(Conv2D(64, (3, 3), activation='relu'))
-        model.add(LocallyConnected2D(64, (1, 1), activation='relu'))
-        model.add(LocallyConnected2D(64, (1, 1), activation='relu'))
-        model.add(Dropout(0.5))
-        model.add(Flatten())
+        model.add(Dense(512, activation='relu', input_shape=(self.window,)))
+        model.add(Dropout(0.2))
         model.add(Dense(512, activation='relu'))
-        model.add(Dropout(0.5))
-        model.add(Dense(512, activation='relu'))
-        model.add(Dropout(0.5))
-        model.add(Dense(128, activation='relu'))
-        model.add(Dense(numClasses, activation='softmax'))
+        model.add(Dropout(0.2))
+        model.add(Dense(2, activation='softmax'))
 
         model.compile(loss=keras.losses.categorical_crossentropy,
                       optimizer=keras.optimizers.Adadelta(),
@@ -116,10 +87,10 @@ class CNN(object):
                   epochs=epochs,
                   verbose=1,
                   validation_data=(x_test, y_test))
+
         self.model = model
         labels = [1 if y_test[i][1] > y_test[i][0] else 0
             for i in range(10, len(y_test))]
-        x_test = np.array(x_test).reshape(1, x_test.shape[0], window)
         self.evaluate(x_test, labels)
 
     '''
@@ -136,12 +107,7 @@ class CNN(object):
         discrete values (either a 0 or a 1 at each time point)
     '''
     def predict_discrete(self, X):
-        X = np.array(X)
-        #reshape to be sqrt(window) x sqrt(window)
-        X = X.reshape(X.shape[1],
-                      int(np.sqrt(self.window)),
-                      int(np.sqrt(self.window)),
-                      1)
+        X = ((X - np.mean(X))/np.std(X))
         #get prediction probabilities
         probabilities = self.model.predict(X)
         #for each time step, find if it's more likely to be class 1 or 0
@@ -187,32 +153,29 @@ class CNN(object):
     ____________
     void
     '''
-    def evaluate(self, X, labels, width = 50):
+    def evaluate(self, X, labels):
         predictions = self.predict_discrete(X)
+        plt.plot(predictions)
+        plt.plot([labels[i] * 2 for i in range(len(labels))])
+        plt.show()
         print 'Performance on test data: '
-        precision_recall_f1(predictions, labels, width)
+        precision_recall_f1(predictions, labels)
 
 
 
 #unit test
 if __name__ == "__main__":
     #variables that you can play around with
-    window = 144 #must be a perfect square
-    epochs = 28 #you probably want to keep this between 0 and 100 if you want it running < 5 minutes
-    batch_size = 10000
-
+    window = 3 #must be a perfect square
+    epochs = 100 #you probably want to keep this between 0 and 100 if you want it running < 5 minutes
+    batch_size = 1000
 
     #loading the data
     import pickle
-    import matplotlib.pyplot as plt
     #NOTE: you'll probably have to change the file path to get this unit test to run
-    #validation on a completely different data set
     train_data = pickle.load(open("/Users/williamlevine/Downloads/6-seconds-trial-1.MultFeat"))
-    train_labels = train_data[1]
-    train_x = np.array(train_data[0])
-    train_x = [prepare_data("/Users/williamlevine/Downloads/OpenBCI-RAW-Contract-Uncontract-6-seconds-trial-1.txt",
-                            return_freq_std_window = True,
-                            window = window)[3][:-1006]]
+    train_labels = np.abs(train_data[1])
+    train_x = np.array([train_data[0]])
 
 
     #running the CNN and producing results
@@ -220,15 +183,8 @@ if __name__ == "__main__":
     cnn.fit(train_x, train_labels, epochs = epochs, batch_size = batch_size)
 
     #validation on a completely different data set
-    #validation on a completely different data set
-    test_data = pickle.load(open("/Users/williamlevine/Downloads/mixture-trial-4.MultFeat"))
-    test_labels = test_data[1]
-    test_x = np.array(test_data[0])
-    test_x = [prepare_data("/Users/williamlevine/Downloads/OpenBCI-RAW-Mixture-Trial-4.txt",
-                            return_freq_std_window = True,
-                            window = window)[3]]
-    cnn.evaluate(test_x, test_labels, window = window)
-    predictions = cnn.predict_discrete(test_x)
-    plt.plot([predictions[i] * 3 for i in range(len(predictions))])
-    plt.plot(test_x[0])
-    plt.show()
+    test_data = pickle.load(open("/Users/williamlevine/Downloads/5-seconds-trial-1.MultFeat"))
+    test_labels = np.abs(test_data[1])
+    test_x = np.array([test_data[0]])
+
+    cnn.evaluate(test_x[0], test_labels)
