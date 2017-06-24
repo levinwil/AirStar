@@ -155,9 +155,6 @@ class CNN(object):
     '''
     def evaluate(self, X, labels):
         predictions = self.predict_discrete(X)
-        plt.plot(predictions)
-        plt.plot([labels[i] * 2 for i in range(len(labels))])
-        plt.show()
         print 'Performance on test data: '
         precision_recall_f1(predictions, labels)
 

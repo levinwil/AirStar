@@ -60,7 +60,8 @@ def precision_recall_f1(predictions, labels, width = 100, label_value = 1):
             upper_bound = width
             if (i + upper_bound > len(labels)):
                 upper_bound = len(predictions) - 1 - i
-	    ra = [1 for j in range(lower_bound, upper_bound) if labels[i + j] == label_value]
+            ra = [1 if labels[i + j] == label_value else 0 for j in \
+                range(lower_bound, upper_bound)]
             if (np.sum(ra) > 0) :
                 true_positives += 1
             else:
@@ -73,11 +74,9 @@ def precision_recall_f1(predictions, labels, width = 100, label_value = 1):
             upper_bound = width
             if (i + upper_bound > len(predictions)):
                 upper_bound = len(predictions) - 1 - i
-            ra = []
-            for j in range(lower_bound, upper_bound):
-                if predictions[i + j] == label_value:
-                    ra.append(1)
-            if (len(ra) == 0) :
+            ra = [1 if labels[i + j] == label_value else 0 for j in \
+                range(lower_bound, upper_bound)]
+            if (np.sum(ra) == 0) :
                 false_negatives +=1
     precision = true_positives * 1.0 / (true_positives + false_positives)
     recall = true_positives * 1.0 / (true_positives + false_negatives)

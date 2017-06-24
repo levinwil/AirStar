@@ -3,6 +3,7 @@ from utils import train_test_split
 import math
 import numpy as np
 from utils import precision_recall_f1
+import matplotlib.pyplot as plt
 
 ''' A general Logistic Regression model for EMG signal classification'''
 class LR(object):
@@ -55,7 +56,7 @@ class LR(object):
     def getPredictions(self,
                 data,
                 verification_window = 5,
-                continuity_window = 25):
+                continuity_window = 200):
         #if there is only 1 feature
         if len(np.array(data).shape) == 1:
             data = np.reshape(data, (-1, 1))
@@ -100,7 +101,7 @@ class LR(object):
     def evaluate(self, data, labels, label_value = 1):
         #predict the remaining data using the generated logistic regression model
         predictions = self.getPredictions(data)
-        precision_recall_f1(np.abs(predictions), np.abs(labels))
+        precision_recall_f1(np.abs(predictions), np.abs(labels), label_value)
 
 #unit test
 if __name__ == "__main__":
@@ -108,7 +109,7 @@ if __name__ == "__main__":
     import pickle
     #NOTE: you'll probably have to change the file path to get this unit test to run
     train_data = pickle.load(open("/Users/williamlevine/Downloads/6-seconds-trial-1.MultFeat"))
-    train_labels = np.abs(train_data[1])
+    train_labels = train_data[1]
     train_x = train_data[0]
 
 
@@ -116,8 +117,11 @@ if __name__ == "__main__":
     lr = LR(train_x, train_labels)
 
     #validation on a completely different data set
-    test_data = pickle.load(open("/Users/williamlevine/Downloads/mixture-trial-4.MultFeat"))
-    test_labels = np.abs(test_data[1])
+    test_data = pickle.load(open("/Users/williamlevine/Downloads/5-seconds-trial-1.MultFeat"))
+    test_labels = test_data[1]
     test_x = test_data[0]
-
-    lr.evaluate(test_x, test_labels)
+    lr.evaluate(test_x, test_labels, label_value = 1)
+    predictions = lr.getPredictions(test_x)
+    plt.plot(test_x[:, 1])
+    plt.plot(predictions)
+    plt.show()
