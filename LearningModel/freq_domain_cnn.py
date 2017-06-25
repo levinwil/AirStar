@@ -38,7 +38,7 @@ class CNN(object):
         the data, where X[i] MUST BE a 1d array of size window
     labels  : 1d-array
         the labels
-    numClasses : int
+    num_classes : int
         the number of classes you'd like to predict
     test_size : Double
         the proportion of data you want to set aside for testing
@@ -53,7 +53,7 @@ class CNN(object):
     self : object
         self is fitted
     """
-    def fit(self, X, labels, numClasses=2, test_size=.25, batch_size=36, epochs=40):
+    def fit(self, X, labels, num_classes=2, test_size=.25, batch_size=36, epochs=40):
         #splitting into training and testing
         x_train, x_test, y_train, y_test = train_test_split(X,
                                                             labels,
@@ -66,8 +66,8 @@ class CNN(object):
         print(x_test.shape[0], 'test samples')
 
         # convert class vectors to binary class matrices
-        y_train = keras.utils.to_categorical(y_train, numClasses)
-        y_test = keras.utils.to_categorical(y_test, numClasses)
+        y_train = keras.utils.to_categorical(y_train, num_classes)
+        y_test = keras.utils.to_categorical(y_test, num_classes)
 
 
         #the CNN model
@@ -76,7 +76,7 @@ class CNN(object):
         model.add(Dropout(0.2))
         model.add(Dense(512, activation='relu'))
         model.add(Dropout(0.2))
-        model.add(Dense(2, activation='softmax'))
+        model.add(Dense(3, activation='softmax'))
 
         model.compile(loss=keras.losses.categorical_crossentropy,
                       optimizer=keras.optimizers.Adadelta(),
@@ -106,13 +106,67 @@ class CNN(object):
     predictions : 1d array
         discrete values (either a 0 or a 1 at each time point)
     '''
-    def predict_discrete(self, X):
+    def predict_discrete(self,
+                         X,
+                         verification_window = 5,
+                         continuity_window = 100,
+                         min_size = 65):
         X = ((X - np.mean(X))/np.std(X))
         #get prediction probabilities
         probabilities = self.model.predict(X)
         #for each time step, find if it's more likely to be class 1 or 0
-        predictions = [1 if probabilities[i][1] > probabilities[i][0] else 0
-            for i in range(10, len(probabilities))]
+        predictions = np.zeros((len(probabilities)))
+        for i in range(len(predictions)):
+            probs_at_time = probabilities[i]
+            if probs_at_time[2] > .75:
+                predictions[i] = -1
+            elif probs_at_time[1] > .85:
+                predictions[i] = 1
+        for i in range(verification_window, len(predictions)):
+            std = np.std([predictions[i - verification_window: i]])
+            if std > 0.5:
+                for j in range(verification_window):
+                    predictions[i - j] = -1
+            if predictions[i] == 1:
+                previous_occurence = predictions[i]
+                for j in range(continuity_window):
+                    if predictions[i - j] == 1:
+                        previous_occurence = i - j
+                    elif predictions[i - j] == -1:
+                        break
+                        break
+                if (i - previous_occurence) < continuity_window:
+                    for j in range(i - previous_occurence):
+                        predictions[i - j] = 1
+            if predictions[i] == -1:
+                previous_occurence = predictions[i]
+                for j in range(continuity_window):
+                    if predictions[i - j] == -1:
+                        previous_occurence = i - j
+                    elif predictions[i - j] == 1:
+                        break
+                        break
+                if (i - previous_occurence) < continuity_window:
+                    for j in range(i - previous_occurence):
+                        predictions[i - j] = -1
+        for i in range(len(predictions)):
+            if predictions[i - 1] == 1 and predictions[i] == 0:
+                j = i - 1
+                while predictions[j] == 1 and j > 0:
+                    j = j -1
+                if (i - j) < min_size:
+                    for k in range(i - j):
+                        predictions[i - k] = predictions[j - 1]
+            if predictions[i - 1] == -1 and predictions[i] == 0:
+                j = i - 1
+                while predictions[j] == -1 and j > 1:
+                    j = j - 1
+                if (i - j) < min_size:
+                    for k in range(i - j):
+                        predictions[i - k] = predictions[j - 1]
+        plt.plot(predictions)
+        plt.plot(X[:,2] / 4)
+        plt.show()
         return np.array(predictions)
 
     '''
@@ -165,23 +219,23 @@ if __name__ == "__main__":
     #variables that you can play around with
     window = 3 #must be a perfect square
     epochs = 100 #you probably want to keep this between 0 and 100 if you want it running < 5 minutes
-    batch_size = 1000
+    batch_size = 50
 
     #loading the data
     import pickle
     #NOTE: you'll probably have to change the file path to get this unit test to run
     train_data = pickle.load(open("/Users/williamlevine/Downloads/6-seconds-trial-1.MultFeat"))
-    train_labels = np.abs(train_data[1])
+    train_labels = train_data[1]
     train_x = np.array([train_data[0]])
 
 
     #running the CNN and producing results
     cnn = CNN(window = window)
-    cnn.fit(train_x, train_labels, epochs = epochs, batch_size = batch_size)
+    cnn.fit(train_x, train_labels, epochs = epochs, batch_size = batch_size, num_classes = 3)
 
     #validation on a completely different data set
-    test_data = pickle.load(open("/Users/williamlevine/Downloads/5-seconds-trial-1.MultFeat"))
-    test_labels = np.abs(test_data[1])
+    test_data = pickle.load(open("/Users/williamlevine/Downloads/mixture-trial-4.MultFeat"))
+    test_labels = test_data[1]
     test_x = np.array([test_data[0]])
 
     cnn.evaluate(test_x[0], test_labels)

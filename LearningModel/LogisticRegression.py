@@ -56,7 +56,8 @@ class LR(object):
     def getPredictions(self,
                 data,
                 verification_window = 5,
-                continuity_window = 200):
+                continuity_window = 100,
+                min_size = 65):
         #if there is only 1 feature
         if len(np.array(data).shape) == 1:
             data = np.reshape(data, (-1, 1))
@@ -88,6 +89,21 @@ class LR(object):
                 if (i - previous_occurence) < continuity_window:
                     for j in range(i - previous_occurence):
                         predictions[i - j] = -1
+        for i in range(len(predictions)):
+            if predictions[i - 1] == 1 and predictions[i] == 0:
+                j = i - 1
+                while predictions[j] == 1 and j > 0:
+                    j = j -1
+                if (i - j) < min_size:
+                    for k in range(i - j):
+                        predictions[i - k] = predictions[j - 1]
+            if predictions[i - 1] == -1 and predictions[i] == 0:
+                j = i - 1
+                while predictions[j] == -1 and j > 1:
+                    j = j - 1
+                if (i - j) < min_size:
+                    for k in range(i - j):
+                        predictions[i - k] = predictions[j - 1]
         return predictions
 
     '''
@@ -117,11 +133,11 @@ if __name__ == "__main__":
     lr = LR(train_x, train_labels)
 
     #validation on a completely different data set
-    test_data = pickle.load(open("/Users/williamlevine/Downloads/5-seconds-trial-1.MultFeat"))
+    test_data = pickle.load(open("/Users/williamlevine/Downloads/mixture-trial-4.MultFeat"))
     test_labels = test_data[1]
     test_x = test_data[0]
     lr.evaluate(test_x, test_labels, label_value = 1)
     predictions = lr.getPredictions(test_x)
-    plt.plot(test_x[:, 1])
-    plt.plot(predictions)
+    plt.plot(test_x[:, 2])
+    plt.plot(np.array(predictions) * 100)
     plt.show()
