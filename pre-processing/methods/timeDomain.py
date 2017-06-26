@@ -1,6 +1,5 @@
 import numpy as np
-from scipy import signal
-from obspy.signal.filter import bandstop
+from scipy.signal import savgol_filter
 
 '''
 peakReject
@@ -12,7 +11,7 @@ of the 'window' points to its left
 Parameters
 ____________
 
-data : 2d array
+data : 3d array
     the data you want to peak rejection
 z_cutoff : Double
     the z-score required for a point to be considered a peak
@@ -50,18 +49,18 @@ def peakReject(data, z_cutoff = 3.5, divide_factor = 3, window = 50):
 '''
 normalize
 
-centers the input data about the x axis so the average is 0. NOTE: we do NOT
-divide by the standard deviation
+divides each channel by the max of that channel, such that each channel
+is roughyl on the same scale
 
 Parameters
 ____________
 
-data : 2d array
+data : 3d array
     the data you want to be normalized
 
 Returns
 ____________
-data : 2d array
+data : 3d array
     the normalized data
 '''
 def normalize(data):
@@ -69,93 +68,25 @@ def normalize(data):
         data[i] = [data[i][k] / np.max(data[i]) for k in range(len(data[i]))]
     return data
 
-'''
-highPass
 
-applies a high pass filter to the input data
+'''
+savgol
+
+applies a savgol smoothing filter to every channel in the data
 
 Parameters
 ____________
 
-data : 2d array
-    the data you want to be filtered
-order : Int
-    the order of the high pass filter
-critical_freq : Double (0 to 1)
-    the critical frequency. Is normalized between 0 and 1, where 1 is the
-    Nyquist frequency (and thus will pass the original signal) and 0 will pass
-    no signal
+data : 3d array
+    the data you want to be smoothened
 
 Returns
 ____________
-data : 2d array
-    the normalized data
+data : 3d array
+    the smooth data
 '''
-def highPass(data, order = 1, critical_freq = .1):
-    ret = []
-    def helper(d):
-        B, A = signal.butter(order, critical_freq, btype = 'highpass', output='ba')
-        return signal.filtfilt(B,A, d)
-    for i in range(len(data)):
-        ret.append(helper(data[i]))
-    return ret
-
-
-'''
-lowPass
-
-applies a low pass filter to the input data
-
-Parameters
-____________
-
-data : 2d array
-    the data you want to be filtered
-order : Int
-    the order of the high pass filter
-critical_freq : Double (0 to 1)
-    the critical frequency. Is normalized between 0 and 1, where 1 is the
-    Nyquist frequency (and thus will pass the original signal) and 0 will pass
-    no signal
-
-Returns
-____________
-data : 2d array
-    the normalized data
-'''
-def lowPass(data, order = 1, critical_freq = .1):
-    ret = []
-    def helper(d):
-        B, A = signal.butter(order, critical_freq, btype = 'lowpass', output='ba')
-        return signal.filtfilt(B,A, d)
-    for i in range(len(data)):
-        ret.append(helper(data[i]))
-    return ret
-
-'''
-bandStop
-
-applies a band stop filter between freqmin and freqmax Hz
-
-Parameters
-____________
-
-data : 2d array
-    the data you want to be filtered
-freqmin : Int (in Hz)
-    the min frequency in the band stop filter
-freqmax : Int (in Hz)
-    the max frequency in the band stop filter
-
-Returns
-____________
-data : 2d array
-    the filtered data
-'''
-def bandStop(data, freq_min = 50, freq_max = 60):
-    ret = []
-    def helper(d):
-        return bandstop(d, freqmin = freq_min, freqmax = freq_max, df = 200)
-    for i in range(len(data)):
-        ret.append(helper(data[i]))
-    return ret
+def savgol(data):
+    for chan in range(len(data)):
+        for feat in range(len(data[chan][0])):
+            data[chan][:, feat] = savgol_filter(data[chan][:, feat], 2001, 5)
+    return data

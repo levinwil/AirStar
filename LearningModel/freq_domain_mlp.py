@@ -295,7 +295,7 @@ if __name__ == "__main__":
     num_features = 3
 
     #variables that you can play around with
-    epochs = 800 #you probably want to keep this between 0 and 100 if you want it running < 5 minutes
+    epochs = 500 #you probably want to keep this between 0 and 100 if you want it running < 5 minutes
     batch_size = 64
 
     #loading the data
