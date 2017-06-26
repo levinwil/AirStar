@@ -259,7 +259,8 @@ class MLP(object):
     '''
     def evaluate(self, X, labels, min_size = 65, display_feat = 1):
         predictions = self.predict_discrete(X, min_size = min_size)
-        pylab.plot(np.array(X[:,1]) / np.max(np.array(X[:, 1])), \
+        pylab.plot(np.array(X[:,display_feat]) \
+                            / np.max(np.array(X[:, display_feat])), \
                             label = "Raw Data Feature " + str(display_feat))
         pylab.plot(np.array(labels) / 1.5, label="Labels")
         pylab.plot(np.array(predictions) / 1.5, label="Predictions")
@@ -295,7 +296,7 @@ if __name__ == "__main__":
     num_features = 3
 
     #variables that you can play around with
-    epochs = 500 #you probably want to keep this between 0 and 100 if you want it running < 5 minutes
+    epochs = 1000 #you probably want to keep this between 0 and 100 if you want it running < 5 minutes
     batch_size = 64
 
     #loading the data
