@@ -56,7 +56,8 @@ class RF(object):
     def getPredictions(self,
                 data,
                 verification_window = 250,
-                continuity_window = 100):
+                continuity_window = 100,
+                min_size = 65):
         #if there is only 1 feature
         if len(np.array(data).shape) == 1:
             data = np.reshape(data, (-1, 1))
@@ -95,8 +96,36 @@ class RF(object):
                 if (i - previous_occurence) < continuity_window:
                     for j in range(i - previous_occurence):
                         predictions[i - j] = -1
+        for i in range(len(predictions)):
+            if predictions[i - 1] == 1 and predictions[i] == 0:
+                j = i - 1
+                while predictions[j] == 1 and j > 0:
+                    j = j -1
+                if (i - j) < min_size:
+                    for k in range(i - j):
+                        predictions[i - k] = predictions[j - 1]
+            elif predictions[i - 1] == -1 and predictions[i] == 0:
+                j = i - 1
+                while predictions[j] == -1 and j > 1:
+                    j = j - 1
+                if (i - j) < min_size:
+                    for k in range(i - j):
+                        predictions[i - k] = predictions[j - 1]
+            elif predictions[i - 1] == 0 and predictions[i] == 1:
+                j = i - 1
+                while predictions[j] == 0 and j > 0:
+                    j = j -1
+                if (i - j) < min_size:
+                    for k in range(i - j):
+                        predictions[i - k] = predictions[j - 1]
+            elif predictions[i - 1] == 0 and predictions[i] == -1:
+                j = i - 1
+                while predictions[j] == 0 and j > 1:
+                    j = j - 1
+                if (i - j) < min_size:
+                    for k in range(i - j):
+                        predictions[i - k] = predictions[j - 1]
         return predictions
-
     '''
     Evaluate the Random Forest model
 
@@ -115,7 +144,7 @@ if __name__ == "__main__":
     #loading the data
     import pickle
     #NOTE: you'll probably have to change the file path to get this unit test to run
-    train_data = pickle.load(open("/Users/williamlevine/Downloads/6-seconds-trial-1.MultFeat"))
+    train_data = pickle.load(open("/Users/williamlevine/Downloads/2-Seconds-6-Seconds-mixture-concat.MultFeat"))
     train_labels = train_data[1]
     train_x = train_data[0]
 
@@ -124,11 +153,11 @@ if __name__ == "__main__":
     rf = RF(train_x, train_labels)
 
     #validation on a completely different data set
-    test_data = pickle.load(open("/Users/williamlevine/Downloads/mixture-trial-4.MultFeat"))
+    test_data = pickle.load(open("/Users/williamlevine/Downloads/5-seconds-trial-1.MultFeat"))
     test_labels = test_data[1]
-    test_x = test_data[0]
+    test_x = np.array(test_data[0])
     rf.evaluate(test_x, test_labels, label_value = 1)
     predictions = rf.getPredictions(test_x)
-    plt.plot(test_x[:, 1])
-    plt.plot(predictions / 2)
+    plt.plot(test_x[:, 1] * 1000)
+    plt.plot(predictions)
     plt.show()

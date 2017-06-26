@@ -1,41 +1,54 @@
 import keras
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten
-from keras.layers import Conv2D, MaxPooling2D
-from keras import backend as K
+from keras.models import Sequential, load_model
+from keras.layers import Dense, Dropout
 from utils import train_test_split, precision_recall_f1
-import matplotlib.pyplot as plt
+import pylab
 import numpy as np
 
 ''' A general model for EMG signal classification'''
-class CNN(object):
+class MLP(object):
 
     '''
-    Convolutional Neural Network Classifier
+    Multi-Layer Perceptron Classifier
     Parameters
     ____________
-    window : int
-        The length of the window you consider for the FFT
-        (MUST BE A PERFECT SQUARE)
-        Generally, if you are going to do short bursts of muscle contraction,
-        the window should be between 25 & 49
+    num_features : int
+        the number of features that you will be using
     Attributes
     ____________
     model : keras model
         The model after fitting
     '''
-    def __init__(self, window=36):
-        self.window = window
-        self.model = None
+    def __init__(self, num_features=3, model_path = None):
+        self.num_features = num_features
+        if model_path != None:
+            self.model = load_model(model_path)
+        else:
+            self.model = None
+
+
+    '''
+    Set_Model
+
+    Parameters
+    ____________
+    model_path : String
+        the path of the model which you are setting
+
+    '''
+    def set_model(self, model_path):
+        self.model = load_model(model_path)
+
+
 
     """
     fit
-    fits the CNN to the input data and labels. Optimizes using gradient descent,
+    fits the MLP to the input data and labels. Optimizes using gradient descent,
     and then evaluates how it did on a subset of your data.
     Parameters
     ---------
     X : 2d-array
-        the data, where X[i] MUST BE a 1d array of size window
+        the data, where X[i] MUST BE a 1d array of size num_features
     labels  : 1d-array
         the labels
     num_classes : int
@@ -53,15 +66,15 @@ class CNN(object):
     self : object
         self is fitted
     """
-    def fit(self, X, labels, num_classes=2, test_size=.25, batch_size=36, epochs=40):
+    def fit(self, X, labels, num_classes=2, test_size=.25, batch_size=36,
+            epochs=40):
         #splitting into training and testing
         x_train, x_test, y_train, y_test = train_test_split(X,
                                                             labels,
                                                             test_size = test_size)
 
-
+        x_train = x_train[0]
         x_test = x_test.astype('float32')[0]
-        x_train = ((x_train - np.mean(x_train))/np.std(x_train))[0]
         print(x_train.shape[0], 'train samples')
         print(x_test.shape[0], 'test samples')
 
@@ -70,9 +83,9 @@ class CNN(object):
         y_test = keras.utils.to_categorical(y_test, num_classes)
 
 
-        #the CNN model
+        #the MLP model
         model = Sequential()
-        model.add(Dense(512, activation='relu', input_shape=(self.window,)))
+        model.add(Dense(512, activation='relu', input_dim=self.num_features))
         model.add(Dropout(0.2))
         model.add(Dense(512, activation='relu'))
         model.add(Dropout(0.2))
@@ -89,8 +102,15 @@ class CNN(object):
                   validation_data=(x_test, y_test))
 
         self.model = model
-        labels = [1 if y_test[i][1] > y_test[i][0] else 0
-            for i in range(10, len(y_test))]
+        labels = np.zeros((len(y_test)))
+        for i in range(len(labels)):
+            labels_at_time = y_test[i]
+            max_index = 0
+            if labels_at_time[1] > labels_at_time[max_index]:
+                max_index = 1
+            if labels_at_time[2] > labels_at_time[max_index]:
+                max_index = -1
+            labels[i] = max_index
         self.evaluate(x_test, labels)
 
     '''
@@ -111,17 +131,19 @@ class CNN(object):
                          verification_window = 5,
                          continuity_window = 100,
                          min_size = 65):
-        X = ((X - np.mean(X))/np.std(X))
         #get prediction probabilities
         probabilities = self.model.predict(X)
         #for each time step, find if it's more likely to be class 1 or 0
         predictions = np.zeros((len(probabilities)))
         for i in range(len(predictions)):
             probs_at_time = probabilities[i]
-            if probs_at_time[2] > .75:
-                predictions[i] = -1
-            elif probs_at_time[1] > .85:
-                predictions[i] = 1
+            max_prob_index = 0
+            if probs_at_time[1] > probs_at_time[max_prob_index]:
+                max_prob_index = 1
+            if probs_at_time[2] > probs_at_time[max_prob_index]:
+                max_prob_index = -1
+            predictions[i] = max_prob_index
+        #fix the intervals which rapidly change between classes
         for i in range(verification_window, len(predictions)):
             std = np.std([predictions[i - verification_window: i]])
             if std > 0.5:
@@ -149,6 +171,8 @@ class CNN(object):
                 if (i - previous_occurence) < continuity_window:
                     for j in range(i - previous_occurence):
                         predictions[i - j] = -1
+        #getting rid of small intervals. Specifically, getting rid of less than
+        #min_size / 200 second intervals
         for i in range(len(predictions)):
             if predictions[i - 1] == 1 and predictions[i] == 0:
                 j = i - 1
@@ -157,16 +181,41 @@ class CNN(object):
                 if (i - j) < min_size:
                     for k in range(i - j):
                         predictions[i - k] = predictions[j - 1]
-            if predictions[i - 1] == -1 and predictions[i] == 0:
+            elif predictions[i - 1] == -1 and predictions[i] == 0:
                 j = i - 1
                 while predictions[j] == -1 and j > 1:
                     j = j - 1
                 if (i - j) < min_size:
                     for k in range(i - j):
                         predictions[i - k] = predictions[j - 1]
-        plt.plot(predictions)
-        plt.plot(X[:,2] / 4)
-        plt.show()
+            elif predictions[i - 1] == 0 and predictions[i] == 1:
+                j = i - 1
+                while predictions[j] == 0 and j > 0:
+                    j = j -1
+                if (i - j) <  min_size:
+                    for k in range(i - j):
+                        predictions[i - k] = predictions[j - 1]
+            elif predictions[i - 1] == 0 and predictions[i] == -1:
+                j = i - 1
+                while predictions[j] == 0 and j > 1:
+                    j = j - 1
+                if (i - j) <  min_size:
+                    for k in range(i - j):
+                        predictions[i - k] = predictions[j - 1]
+            elif predictions[i - 1] == -1 and predictions[i] == 1:
+                j = i - 1
+                while predictions[j] == -1 and j > 0:
+                    j = j -1
+                if (i - j) <  min_size:
+                    for k in range(i - j):
+                        predictions[i - k] = predictions[j - 1]
+            elif predictions[i - 1] == 1 and predictions[i] == -1:
+                j = i - 1
+                while predictions[j] == 1 and j > 1:
+                    j = j - 1
+                if (i - j) <  min_size:
+                    for k in range(i - j):
+                        predictions[i - k] = predictions[j - 1]
         return np.array(predictions)
 
     '''
@@ -184,58 +233,87 @@ class CNN(object):
         index i is the probability that timepoint belongs to class i)
     '''
     def predict_continuous(self, X):
-        #reshape to be sqrt(window) x sqrt(window)
-        X = np.array(X).reshape(X.shape[1],
-                                np.sqrt(self.window),
-                                np.sqrt(self.window),
-                                1)
         return np.array(self.model.predict(X))
 
 
 
     '''
     evaluate
-    evaluates a model's prediction performance on a data set against its set of labels
+
+    evaluates a model's prediction performance on a data set against its set of
+    labels
+
     Parameters
     ____________
     X : 2d array
         the data the model will predict
-        X[i] is of size window
+        X[i] is of size num_features
     labels : 1d array
         the ground truth
+    display_feat : int
+        the feature you'd like yo visualize to further evaluate if the
+        predictions are or are not correct
     Returns
     ____________
     void
     '''
-    def evaluate(self, X, labels):
-        predictions = self.predict_discrete(X)
+    def evaluate(self, X, labels, min_size = 65, display_feat = 1):
+        predictions = self.predict_discrete(X, min_size = min_size)
+        pylab.plot(np.array(X[:,1]) / np.max(np.array(X[:, 1])), \
+                            label = "Raw Data Feature " + str(display_feat))
+        pylab.plot(np.array(labels) / 1.5, label="Labels")
+        pylab.plot(np.array(predictions) / 1.5, label="Predictions")
+        pylab.xlabel("Time")
+        pylab.ylabel("Unit of Feature " + str(display_feat))
+        pylab.legend(loc = 'upper right')
+        pylab.ylim(-1.2, 1.2)
+        pylab.show()
         print 'Performance on test data: '
         precision_recall_f1(predictions, labels)
+
+    '''
+    save_model
+
+    saves the MLP model
+
+    Parameters
+    ____________
+    file_path : String
+        the file path to save the model at (must end in '.h5')
+
+    Returns
+    ____________
+    void
+    '''
+    def save_model(self, file_path):
+        self.model.save(file_path)
 
 
 
 #unit test
 if __name__ == "__main__":
+    num_features = 3
+
     #variables that you can play around with
-    window = 3 #must be a perfect square
-    epochs = 100 #you probably want to keep this between 0 and 100 if you want it running < 5 minutes
-    batch_size = 50
+    epochs = 800 #you probably want to keep this between 0 and 100 if you want it running < 5 minutes
+    batch_size = 64
 
     #loading the data
     import pickle
     #NOTE: you'll probably have to change the file path to get this unit test to run
-    train_data = pickle.load(open("/Users/williamlevine/Downloads/6-seconds-trial-1.MultFeat"))
+    train_data = pickle.load(open("/Users/williamlevine/Downloads/2-Seconds-6-Seconds-mixture-concat.MultFeat"))
     train_labels = train_data[1]
     train_x = np.array([train_data[0]])
 
 
-    #running the CNN and producing results
-    cnn = CNN(window = window)
-    cnn.fit(train_x, train_labels, epochs = epochs, batch_size = batch_size, num_classes = 3)
+    #running the MLP and producing results
+    MLP = MLP(num_features  = num_features)
+    MLP.fit(train_x, train_labels, epochs = epochs, batch_size = batch_size, num_classes = 3)
+    MLP.save_model("/Users/williamlevine/Documents/BCI/AirStar/LearningModel/saved_models/MLP.h5")
 
     #validation on a completely different data set
-    test_data = pickle.load(open("/Users/williamlevine/Downloads/mixture-trial-4.MultFeat"))
+    test_data = pickle.load(open("/Users/williamlevine/Downloads/5-seconds-trial-1.MultFeat"))
     test_labels = test_data[1]
     test_x = np.array([test_data[0]])
 
-    cnn.evaluate(test_x[0], test_labels)
+    MLP.evaluate(test_x[0], test_labels, min_size = 170)

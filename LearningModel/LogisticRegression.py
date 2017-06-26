@@ -97,11 +97,25 @@ class LR(object):
                 if (i - j) < min_size:
                     for k in range(i - j):
                         predictions[i - k] = predictions[j - 1]
-            if predictions[i - 1] == -1 and predictions[i] == 0:
+            elif predictions[i - 1] == -1 and predictions[i] == 0:
                 j = i - 1
                 while predictions[j] == -1 and j > 1:
                     j = j - 1
                 if (i - j) < min_size:
+                    for k in range(i - j):
+                        predictions[i - k] = predictions[j - 1]
+            elif predictions[i - 1] == 0 and predictions[i] == 1:
+                j = i - 1
+                while predictions[j] == 0 and j > 0:
+                    j = j -1
+                if (i - j) <  min_size:
+                    for k in range(i - j):
+                        predictions[i - k] = predictions[j - 1]
+            elif predictions[i - 1] == 0 and predictions[i] == -1:
+                j = i - 1
+                while predictions[j] == 0 and j > 1:
+                    j = j - 1
+                if (i - j) <  min_size:
                     for k in range(i - j):
                         predictions[i - k] = predictions[j - 1]
         return predictions
@@ -124,7 +138,7 @@ if __name__ == "__main__":
     #loading the data
     import pickle
     #NOTE: you'll probably have to change the file path to get this unit test to run
-    train_data = pickle.load(open("/Users/williamlevine/Downloads/6-seconds-trial-1.MultFeat"))
+    train_data = pickle.load(open("/Users/williamlevine/Downloads/2-Seconds-6-Seconds-mixture-concat.MultFeat"))
     train_labels = train_data[1]
     train_x = train_data[0]
 
@@ -133,11 +147,11 @@ if __name__ == "__main__":
     lr = LR(train_x, train_labels)
 
     #validation on a completely different data set
-    test_data = pickle.load(open("/Users/williamlevine/Downloads/mixture-trial-4.MultFeat"))
+    test_data = pickle.load(open("/Users/williamlevine/Downloads/5-seconds-trial-1.MultFeat"))
     test_labels = test_data[1]
-    test_x = test_data[0]
-    lr.evaluate(test_x, test_labels, label_value = 1)
+    test_x = np.array(test_data[0])
     predictions = lr.getPredictions(test_x)
-    plt.plot(test_x[:, 2])
-    plt.plot(np.array(predictions) * 100)
+    lr.evaluate(test_x, predictions)
+    plt.plot(test_x[:, 1] * 1000)
+    plt.plot(predictions)
     plt.show()

@@ -5,6 +5,7 @@ from freqDomain import *
 from parse import *
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 '''
 A master preprocessing method that includes high pass filtering, low pass
@@ -31,7 +32,7 @@ around it
 '''
 def prepare_data(filePath, num_channels = 4, filter_order = 2,
                  do_high_pass = True, do_low_pass = True,
-                 high_pass_critical_freq = .1, low_pass_critical_freq = .1,
+                 high_pass_critical_freq = .5, low_pass_critical_freq = .1,
                  band_stop_min_freq = 50, band_stop_max_freq = 60,
                  reject_z_cutoff = 2.5, reject_divide_factor = 4,
                  window = 36, return_freq = False,
@@ -57,6 +58,13 @@ def prepare_data(filePath, num_channels = 4, filter_order = 2,
                         two_dimension_data[j][k][1] = ((two_dimension_data[j][k][0] - two_dimension_data[j][k - 2*window][0])/(2*window))
                         local = two_dimension_data[j][k - window : k, 0]
                         two_dimension_data[j][k][2] = (two_dimension_data[j][k][0] - np.mean(local))
+                for chan in range(len(two_dimension_data)):
+                    for tp in range(len(two_dimension_data[chan])):
+                        for feat in range(len(two_dimension_data[chan][tp])):
+                            if math.isnan(two_dimension_data[chan][tp][feat]) or math.isinf(two_dimension_data[chan][tp][feat]):
+                                two_dimension_data[chan][tp][feat] = np.min(two_dimension_data[chan][(tp-5):tp][feat])
+                                print two_dimension_data[chan][tp][feat]
+                two_dimension_data = normalize(two_dimension_data)
                 return two_dimension_data
             else:
                 two_dimension_data = np.zeros((len(data), len(data[0]), window))
@@ -68,4 +76,9 @@ def prepare_data(filePath, num_channels = 4, filter_order = 2,
                             std = [np.std(data[j][l]) for l in range(k - window, k)]
                             two_dimension_data[j][k] = std
                 data = two_dimension_data
+    for chan in range(len(data)):
+        for tp in range(len(data[chan])):
+            for feat in range(len(data[chan][tp])):
+                if math.isnan(data[chan][tp][feat]) or math.isinf(data[chan][tp][feat]):
+                    data[chan][tp][feat] = np.mean(data[chan][tp][feat - 10:feat])
     return np.array(data)
