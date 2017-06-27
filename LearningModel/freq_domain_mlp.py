@@ -85,8 +85,8 @@ class MLP(object):
 
         #the MLP model
         model = Sequential()
-        model.add(Dense(512, activation='relu', input_dim=self.num_features))
-        model.add(Dropout(0.2))
+        model.add(Dense(1024, activation='relu', input_dim=self.num_features))
+        model.add(Dropout(0.5))
         model.add(Dense(512, activation='relu'))
         model.add(Dropout(0.2))
         model.add(Dense(3, activation='softmax'))
@@ -296,24 +296,24 @@ if __name__ == "__main__":
     num_features = 3
 
     #variables that you can play around with
-    epochs = 1000 #you probably want to keep this between 0 and 100 if you want it running < 5 minutes
+    epochs = 50 #you probably want to keep this between 0 and 100 if you want it running < 5 minutes
     batch_size = 64
 
     #loading the data
     import pickle
     #NOTE: you'll probably have to change the file path to get this unit test to run
-    train_data = pickle.load(open("/Users/williamlevine/Downloads/2-Seconds-6-Seconds-mixture-concat.MultFeat"))
+    train_data = pickle.load(open("/Users/williamlevine/Downloads/concat_train.MultFeat"))
     train_labels = train_data[1]
     train_x = np.array([train_data[0]])
 
 
     #running the MLP and producing results
     MLP = MLP(num_features  = num_features)
-    MLP.fit(train_x, train_labels, epochs = epochs, batch_size = batch_size, num_classes = 3)
+    MLP.fit(train_x, train_labels, epochs = epochs, batch_size = batch_size, num_classes = 3, test_size = .05)
     MLP.save_model("/Users/williamlevine/Documents/BCI/AirStar/LearningModel/saved_models/MLP.h5")
 
     #validation on a completely different data set
-    test_data = pickle.load(open("/Users/williamlevine/Downloads/5-seconds-trial-1.MultFeat"))
+    test_data = pickle.load(open("/Users/williamlevine/Downloads/3-Seconds-Will-Trial-2.MultFeat"))
     test_labels = test_data[1]
     test_x = np.array([test_data[0]])
 

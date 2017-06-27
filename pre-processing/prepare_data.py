@@ -87,11 +87,11 @@ def prepare_data(filePath, num_channels = 4, filter_order = 2,
                             if math.isnan(two_dimension_data[chan][tp][feat]) or math.isinf(two_dimension_data[chan][tp][feat]):
                                 two_dimension_data[chan][tp][feat] = 0.0
 
-                #normalize all the channels
-                two_dimension_data = normalize(two_dimension_data)
-
                 #smooth
                 two_dimension_data = savgol(two_dimension_data)
+
+                #normalize all the channels
+                two_dimension_data = normalize(two_dimension_data)
                 return two_dimension_data
             else:
                 #the thing we'll be returning
