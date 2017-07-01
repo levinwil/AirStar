@@ -5,7 +5,6 @@ from freqDomain import *
 from parse import *
 import numpy as np
 import matplotlib.pyplot as plt
-import math
 
 '''
 A master preprocessing method that includes high pass filtering, low pass
@@ -30,12 +29,12 @@ standard deviation of its frequency makeup window, data[i][1] is its
 approximate slope, and data[i][2] is data[i][0] in relation to the points
 around it
 '''
-def prepare_data(filePath, num_channels = 4, filter_order = 2,
+def prepare_data(filePath, num_channels = 1, filter_order = 2,
                  do_high_pass = True, do_low_pass = True,
                  high_pass_critical_freq = .1, low_pass_critical_freq = .1,
                  band_stop_min_freq = 50, band_stop_max_freq = 60,
                  reject_z_cutoff = 2.5, reject_divide_factor = 4,
-                 window = 36, return_freq = False,
+                 window = 100, return_freq = False,
                  return_freq_std_window = False, return_multi_feat = True):
     data = parse(filePath, num_channels)
     #high pass filter
@@ -74,18 +73,14 @@ def prepare_data(filePath, num_channels = 4, filter_order = 2,
                     for k in range(2*window, len(data[j])):
 
                         #the second feature is the tangent slope
-                        two_dimension_data[j][k][1] = ((two_dimension_data[j][k][0] - two_dimension_data[j][k - 2*window][0])/(2*window))
+                        two_dimension_data[j][k][1] = ((two_dimension_data[j][k][0] - two_dimension_data[j][k - window][0])/(window))
 
                         #the third feature is the timepoint in comparison to its local mean
                         local = two_dimension_data[j][k - window : k, 0]
                         two_dimension_data[j][k][2] = (two_dimension_data[j][k][0] - np.mean(local))
 
-                #getting rid of Nan invalid values
-                for chan in range(len(two_dimension_data)):
-                    for tp in range(len(two_dimension_data[chan])):
-                        for feat in range(len(two_dimension_data[chan][tp])):
-                            if math.isnan(two_dimension_data[chan][tp][feat]) or math.isinf(two_dimension_data[chan][tp][feat]):
-                                two_dimension_data[chan][tp][feat] = 0.0
+                #get rid of nan values
+                two_dimension_data = get_rid_nan_values(two_dimension_data)
 
                 #smooth
                 two_dimension_data = savgol(two_dimension_data)
@@ -106,6 +101,7 @@ def prepare_data(filePath, num_channels = 4, filter_order = 2,
                             #it
                             two_dimension_data[j][k] = mx
                 data = two_dimension_data
+
     #check for Nan values
     for chan in range(len(data)):
         for tp in range(len(data[chan])):

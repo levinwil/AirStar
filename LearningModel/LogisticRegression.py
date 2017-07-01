@@ -170,7 +170,7 @@ if __name__ == "__main__":
     lr = LR(train_x, train_labels)
 
     #validation on a completely different data set
-    test_data = pickle.load(open("/Users/williamlevine/Downloads/2-Seconds-Will-Trial-1.MultFeat"))
+    test_data = pickle.load(open("/Users/williamlevine/Downloads/3-Seconds-Will-Trial-2.MultFeat"))
     test_labels = test_data[1]
     test_x = np.array(test_data[0])
-    lr.evaluate(test_x, test_labels)
+    lr.evaluate(test_x, test_labels, display_feat = 1)

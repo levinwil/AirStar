@@ -134,43 +134,14 @@ class MLP(object):
         #get prediction probabilities
         probabilities = self.model.predict(X)
         #for each time step, find if it's more likely to be class 1 or 0
-        predictions = np.zeros((len(probabilities)))
-        for i in range(len(predictions)):
-            probs_at_time = probabilities[i]
-            max_prob_index = 0
-            if probs_at_time[1] > probs_at_time[max_prob_index]:
-                max_prob_index = 1
-            if probs_at_time[2] > probs_at_time[max_prob_index]:
-                max_prob_index = -1
-            predictions[i] = max_prob_index
+        predictions = [np.argmax(probabilities[i]) for i in range(len(probabilities))]
+        predictions = [-1 if predictions[i] == 2 else predictions[i] for i in range(len(predictions))]
         #fix the intervals which rapidly change between classes
         for i in range(verification_window, len(predictions)):
             std = np.std([predictions[i - verification_window: i]])
             if std > 0.5:
                 for j in range(verification_window):
                     predictions[i - j] = -1
-            if predictions[i] == 1:
-                previous_occurence = predictions[i]
-                for j in range(continuity_window):
-                    if predictions[i - j] == 1:
-                        previous_occurence = i - j
-                    elif predictions[i - j] == -1:
-                        break
-                        break
-                if (i - previous_occurence) < continuity_window:
-                    for j in range(i - previous_occurence):
-                        predictions[i - j] = 1
-            if predictions[i] == -1:
-                previous_occurence = predictions[i]
-                for j in range(continuity_window):
-                    if predictions[i - j] == -1:
-                        previous_occurence = i - j
-                    elif predictions[i - j] == 1:
-                        break
-                        break
-                if (i - previous_occurence) < continuity_window:
-                    for j in range(i - previous_occurence):
-                        predictions[i - j] = -1
         #getting rid of small intervals. Specifically, getting rid of less than
         #min_size / 200 second intervals
         for i in range(len(predictions)):
@@ -296,7 +267,7 @@ if __name__ == "__main__":
     num_features = 3
 
     #variables that you can play around with
-    epochs = 50 #you probably want to keep this between 0 and 100 if you want it running < 5 minutes
+    epochs = 100 #you probably want to keep this between 0 and 100 if you want it running < 5 minutes
     batch_size = 64
 
     #loading the data

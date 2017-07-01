@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.signal import savgol_filter
+import math
 
 '''
 peakReject
@@ -64,8 +65,13 @@ data : 3d array
     the normalized data
 '''
 def normalize(data):
-    for i in range(len(data)):
-        data[i] = [data[i][k] / np.max(data[i]) for k in range(len(data[i]))]
+    data = np.array(data)
+    for chan in range(data.shape[0]):
+        for feat in range(data.shape[2]):
+            data[chan][:, feat] = data[chan][:, feat] - \
+            np.mean(data[chan][:, feat])
+            data[chan][:, feat] = data[chan][:, feat] / \
+            np.max(data[chan][:, feat])
     return data
 
 
@@ -79,14 +85,41 @@ ____________
 
 data : 3d array
     the data you want to be smoothened
+window : Int
+    the window size you consider when estimating polynomials
+max_degree_poly : Int
+    the maximum degree polynomial you will estimate
 
 Returns
 ____________
 data : 3d array
     the smooth data
 '''
-def savgol(data):
+def savgol(data, window = 2001, max_degree_poly = 5):
     for chan in range(len(data)):
         for feat in range(len(data[chan][0])):
-            data[chan][:, feat] = savgol_filter(data[chan][:, feat], 2001, 5)
+            data[chan][:, feat] = savgol_filter(data[chan][:, feat],
+                                                window,
+                                                max_degree_poly)
     return data
+
+'''
+get_rid_nan_values
+
+gets rid of nan values in a 2D array and replaces them with 0's
+
+Parameters
+__________
+two_dimension_data : array
+
+Returns
+__________
+two_dimension_data : array
+'''
+def get_rid_nan_values(two_dimension_data):
+    for chan in range(len(two_dimension_data)):
+        for tp in range(len(two_dimension_data[chan])):
+            for feat in range(len(two_dimension_data[chan][tp])):
+                if math.isnan(two_dimension_data[chan][tp][feat]) or math.isinf(two_dimension_data[chan][tp][feat]):
+                    two_dimension_data[chan][tp][feat] = 0.0
+    return two_dimension_data
