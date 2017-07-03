@@ -132,7 +132,6 @@ Parameters
 ---------
 array-like predictions       --- Either an np.ndarray or a pd.DataFrame containing the predictions
 array-like labels            --- Either an np.ndarray or a pd.DataFrame containing the labels
-numeric-type width           --- the window size to consider in labels when classifying a prediction, and in predictions when classifying a label
 
 Return
 ------
