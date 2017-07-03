@@ -39,9 +39,9 @@ def peakReject(data, z_cutoff = 3.5, divide_factor = 3, window = 50):
         for i in range(len(channel)):
             zscore = (channel[i] - mean)/(std)
             if np.abs(zscore) >= z_cutoff:
-                lowerBound = i - window
+                lowerBound = window
                 if lowerBound < 2 * window:
-                    lowerBound = 0
+                    lowerBound = i - 2 * window
                 localMean = np.mean([originalChannel[i - k] for k in range(lowerBound)])
                 channel[i] = (channel[i] - localMean)/divide_factor + localMean
         data[j] = channel
@@ -59,19 +59,21 @@ ____________
 data : 3d array
     the data you want to be normalized
 
+percentile : Int
+    the percentile you'd like to subtract from the 0th channel
+
 Returns
 ____________
 data : 3d array
     the normalized data
 '''
-def normalize(data):
+def normalize(data, percentile = 10):
     data = np.array(data)
     for chan in range(data.shape[0]):
-        for feat in range(data.shape[2]):
-            data[chan][:, feat] = data[chan][:, feat] - \
-            np.mean(data[chan][:, feat])
-            data[chan][:, feat] = data[chan][:, feat] / \
-            np.max(data[chan][:, feat])
+        data[chan][:, 0] = data[chan][:, 0] - \
+        np.percentile(data[chan][:, 0], percentile)
+        data[chan][:, 2] = data[chan][:, 2] - \
+        np.mean(data[chan][:, 2])
     return data
 
 

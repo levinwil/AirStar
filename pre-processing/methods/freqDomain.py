@@ -19,7 +19,7 @@ Return
 a 3D numpy array, where the first dimension is channel, the second is time, and the third is frequency
 
 """
-def FFT(data, window = 100):
+def FFT(data, window = 225):
     ret = np.zeros((len(data), len(data[0]), window))
     for j in range(len(data)):
         for i in range(0, len(data[j])):

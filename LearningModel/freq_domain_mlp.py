@@ -66,7 +66,12 @@ class MLP(object):
     self : object
         self is fitted
     """
-    def fit(self, X, labels, num_classes=2, test_size=.25, batch_size=36,
+    def fit(self,
+            X,
+            labels,
+            num_classes=2,
+            test_size=.25,
+            batch_size=36,
             epochs=40):
         #splitting into training and testing
         x_train, x_test, y_train, y_test = train_test_split(X,
@@ -85,11 +90,10 @@ class MLP(object):
 
         #the MLP model
         model = Sequential()
-        model.add(Dense(1024, activation='relu', input_dim=self.num_features))
-        model.add(Dropout(0.5))
-        model.add(Dense(512, activation='relu'))
-        model.add(Dropout(0.2))
-        model.add(Dense(3, activation='softmax'))
+        model = Sequential()
+        model.add(LSTM(64, input_dim=self.num_features, return_sequences=True))
+        model.add(LSTM(32, return_sequences=True))
+        model.add(LSTM(10))
 
         model.compile(loss=keras.losses.categorical_crossentropy,
                       optimizer=keras.optimizers.Adadelta(),
@@ -267,7 +271,7 @@ if __name__ == "__main__":
     num_features = 3
 
     #variables that you can play around with
-    epochs = 100 #you probably want to keep this between 0 and 100 if you want it running < 5 minutes
+    epochs = 2 #you probably want to keep this between 0 and 100 if you want it running < 5 minutes
     batch_size = 64
 
     #loading the data
@@ -279,13 +283,20 @@ if __name__ == "__main__":
 
 
     #running the MLP and producing results
-    MLP = MLP(num_features  = num_features)
-    MLP.fit(train_x, train_labels, epochs = epochs, batch_size = batch_size, num_classes = 3, test_size = .05)
-    MLP.save_model("/Users/williamlevine/Documents/BCI/AirStar/LearningModel/saved_models/MLP.h5")
+    MLP = MLP(num_features = num_features)
+    MLP.fit(train_x,
+            train_labels,
+            epochs = epochs,
+            batch_size = batch_size,
+            num_classes = 3,
+            test_size = .05)
+    MLP.save_model("/Users/williamlevine/Documents/BCI/AirStar/learning_model/saved_models/MLP.h5")
 
     #validation on a completely different data set
     test_data = pickle.load(open("/Users/williamlevine/Downloads/3-Seconds-Will-Trial-2.MultFeat"))
     test_labels = test_data[1]
     test_x = np.array([test_data[0]])
 
-    MLP.evaluate(test_x[0], test_labels, min_size = 170)
+    MLP.evaluate(test_x[0],
+                 test_labels,
+                 min_size = 170)
