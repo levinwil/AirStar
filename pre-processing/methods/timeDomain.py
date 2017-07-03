@@ -50,8 +50,7 @@ def peakReject(data, z_cutoff = 3.5, divide_factor = 3, window = 50):
 '''
 normalize
 
-divides each channel by the max of that channel, such that each channel
-is roughyl on the same scale
+centers the 0th channel about the x-axis and filters out background noise
 
 Parameters
 ____________
@@ -62,18 +61,24 @@ data : 3d array
 percentile : Int
     the percentile you'd like to subtract from the 0th channel
 
+window: Int
+    the window we consider when normalizing
+
+background_value : Int
+    the static background value
+
 Returns
 ____________
 data : 3d array
     the normalized data
 '''
-def normalize(data, percentile = 10):
+def normalize(data,  background_value, percentile = 20, window = 500):
     data = np.array(data)
     for chan in range(data.shape[0]):
-        data[chan][:, 0] = data[chan][:, 0] - \
-        np.percentile(data[chan][:, 0], percentile)
-        data[chan][:, 2] = data[chan][:, 2] - \
-        np.mean(data[chan][:, 2])
+        for tp in range(window, data.shape[1]):
+            data[chan][tp, 0] = data[chan][tp, 0] - \
+            np.percentile(data[chan][tp - window : tp, 0], percentile) -\
+            background_value
     return data
 
 

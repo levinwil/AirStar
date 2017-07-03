@@ -1,6 +1,5 @@
-import uuid
-import tensorflow as tf
 import numpy as np
+from sklearn.metrics import accuracy_score
 
 """
 train_test_split
@@ -123,3 +122,24 @@ def batch_iter(data, batch_size, num_epochs, shuffle=True):
             start_idx = j_batch * batch_size
             end_idx = min( ( (j_batch + 1) * batch_size) , data_size )
             yield( data[start_idx:end_idx] )
+
+"""
+accuracy
+
+calculates the accuracy of your predictions in reference to your labels
+
+Parameters
+---------
+array-like predictions       --- Either an np.ndarray or a pd.DataFrame containing the predictions
+array-like labels            --- Either an np.ndarray or a pd.DataFrame containing the labels
+numeric-type width           --- the window size to consider in labels when classifying a prediction, and in predictions when classifying a label
+
+Return
+------
+accuracy : float
+
+"""
+def accuracy(data, labels):
+    accuracy = accuracy_score(data, labels, normalize = True)
+    print 'Accuracy:' + str(accuracy)
+    return accuracy
