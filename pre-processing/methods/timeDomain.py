@@ -73,12 +73,15 @@ data : 3d array
     the normalized data
 '''
 def normalize(data,  background_value, percentile = 20, window = 500):
-    data = np.array(data)
+    orig_data = np.array(data)
     for chan in range(data.shape[0]):
         for tp in range(window, data.shape[1]):
-            data[chan][tp, 0] = data[chan][tp, 0] - \
-            np.percentile(data[chan][tp - window : tp, 0], percentile) -\
-            background_value
+            subtract_percentile = \
+            np.percentile(orig_data[chan][tp - window : tp, 0], percentile)
+            if subtract_percentile < 0:
+                subtract_percentile = 0
+            data[chan][tp, 0] = orig_data[chan][tp, 0] - \
+            subtract_percentile -background_value
     return data
 
 

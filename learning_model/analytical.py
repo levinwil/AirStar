@@ -1,3 +1,5 @@
+import numpy as np
+
 '''
 predict
 
@@ -17,13 +19,14 @@ predictions : 2d array
     the predictions
 '''
 
-def predict(data, locl_val_thres = 3):
+def predict(data, local_val_thresh = 0):
     predictions = []
-    for i in range(len(normal)):
-        if normal[i, 0] > 0 and np.abs(normal[i, 2]) > local_val_thresh:
-            if normal[i, 2] > 0:
-                predictions.append(normal[i, 0])
+    for i in range(len(data)):
+        if data[i, 0] > 0 and np.abs(data[i, 2]) > local_val_thresh:
+            if data[i, 2] > 0:
+                predictions.append(data[i, 0])
             else:
-                predictions.append(-1 * normal[i, 0])
+                predictions.append(data[i, 0])
         else:
             predictions.append(0)
+    return np.array(predictions)

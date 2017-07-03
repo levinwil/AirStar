@@ -1,14 +1,12 @@
 import sys
 sys.path.append("./pre-processing/methods/")
 sys.path.append("./learning_model/")
-from freq_domain_mlp import *
-from logistic_regression import *
 from timeDomain import *
 from freqDomain import *
 from parse import *
 import numpy as np
 import matplotlib.pyplot as plt
-import pickle
+from analytical import predict
 
 '''
 A master preprocessing method that includes high pass filtering, low pass
@@ -32,16 +30,16 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
                  band_stop_min_freq = 50, band_stop_max_freq = 60,
                  reject_z_cutoff = 2.5, reject_divide_factor = 4,
                  window = 225):
-    lr = LR()
-    train_data = pickle.load(open("/Users/williamlevine/Downloads/concat_train.MultFeat"))
-    lr.fit(train_data[0], train_data[1])
+
     while(True):
-        data, string = parse(filePath, num_channels)
-        if np.array(data).shape[1] <= 7000:
+        data = parse(filePath, num_channels)
+        #keep only the last 2000 lines
+        if np.array(data).shape[1] <= 2000:
             print "Calibrating"
-            print str(np.array(data).shape[1]/7000.0) + "%"
+            print str(np.array(data).shape[1]/2000.0) + "%"
         else:
-            data = data[0:num_channels, -7000:]
+            lines = data[0:num_channels, -2000:]
+            data = lines
             #high pass filter
             if do_high_pass:
                 data = highPass(data, filter_order, high_pass_critical_freq)
@@ -89,13 +87,24 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
             for chan in range(num_channels):
                 #get predictions for current timepoint
                 data_2000 = two_dimension_data[chan]
-                labels = [1] * len(data_2000 / 2) + [0] * len(data_2000 / 2)
-                predict_7000 = lr.getPredictions(data_2000)
+                predictions = predict(data_2000)
                 plt.plot(data_2000[:, 2])
-                plt.plot(predict_7000)
+                plt.plot(predictions)
                 plt.show()
-                mean_predict = np.mean(predict_7000[-200:])
+                mean_predict = np.mean(predictions[-50:])
                 print 'Prediction on Channel ' + str(chan) + ": " + \
                 str(mean_predict)
+            #keep only the last 2000 lines
+            f = open(filePath, 'w+')
+            f.seek(0)
+            f.truncate()
+            string = ""
+            for tp in range(len(lines[0])):
+                string += str(tp)
+                for chan in range(len(lines)):
+                    string += ", " + str(lines[chan][tp])
+                string += "\n"
+            f.write(string)
+            f.close()
 
 stream_detect("/Users/williamlevine/Documents/BCI/SavedData/OpenBCI-RAW-2017-07-01_20-46-34.txt")

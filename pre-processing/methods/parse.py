@@ -3,9 +3,8 @@ import numpy as np
 import numpy as np
 
 def parse(filename, numChannels):
-    string = open(filename).read()
-    data = string.split("\n")
-    data = np.array([line.split(", ") for line in data if "%" not in line])
+    lines = open(filename).read().split("\n")
+    data = np.array([line.split(", ") for line in lines if "%" not in line])
     #what we are returning
     ret = []
     for i in range(1, numChannels + 1):
@@ -16,4 +15,4 @@ def parse(filename, numChannels):
                 if np.sum(crossChannel) != 0:
                     channelData.append(float(data[j][i].replace(",","")))
         ret.append(channelData)
-    return np.array(ret), string
+    return np.array(ret)
