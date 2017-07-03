@@ -30,61 +30,6 @@ def train_test_split(data, labels, test_size = 0.25, channels_present = True):
         test_y = labels[int(len(labels)*(1 - test_size)):]
     return train_x, test_x, train_y, test_y
 
-"""
-precision_recall_f1
-
-calculates the precision, recall, and f1 of your predictions in reference to your labels (note: does NOT calculate based on overlap, but ranges, rather)
-
-Parameters
----------
-array-like predictions       --- Either an np.ndarray or a pd.DataFrame containing the predictions
-array-like labels            --- Either an np.ndarray or a pd.DataFrame containing the labels
-numeric-type width           --- the window size to consider in labels when classifying a prediction, and in predictions when classifying a label
-
-Return
-------
-(in order) precision, recall, F1
-
-"""
-def precision_recall_f1(predictions, labels, width = 100, label_value = 1):
-    true_positives = 0
-    true_negatives = 0
-    false_positives = 0
-    false_negatives = 0
-    for i in range(len(predictions)):
-        if predictions[i] == label_value:
-            lower_bound = -1 * width
-            if (i + lower_bound < 0):
-                lower_bound = 0
-            upper_bound = width
-            if (i + upper_bound >= len(labels)):
-                upper_bound = len(predictions) - 1 - i
-            ra = [1 if labels[i + j] == label_value else 0 for j in \
-                range(lower_bound, upper_bound)]
-            if (np.sum(ra) > 0) :
-                true_positives += 1
-            else:
-                false_positives +=1
-    for i in range(len(labels)):
-        if labels[i] == label_value:
-            lower_bound = -1 * width
-            if (i + lower_bound < 0):
-                lower_bound = 0
-            upper_bound = width
-            if (i + upper_bound >= len(predictions)):
-                upper_bound = len(predictions) - 1 - i
-            ra = [1 if predictions[i + j] == label_value else 0 for j in \
-                range(lower_bound, upper_bound)]
-            if (np.sum(ra) == 0) :
-                false_negatives +=1
-    precision = true_positives * 1.0 / (true_positives + false_positives)
-    recall = true_positives * 1.0 / (true_positives + false_negatives)
-    F1 = 2 * precision * recall / (precision + recall)
-    print "Precision: " + str(precision)
-    print "Recall: " + str(recall)
-    print "F1: " + str(F1)
-    return precision, recall, F1
-
 
 """
 batch_iter
@@ -132,7 +77,6 @@ Parameters
 ---------
 array-like predictions       --- Either an np.ndarray or a pd.DataFrame containing the predictions
 array-like labels            --- Either an np.ndarray or a pd.DataFrame containing the labels
-numeric-type width           --- the window size to consider in labels when classifying a prediction, and in predictions when classifying a label
 
 Return
 ------
