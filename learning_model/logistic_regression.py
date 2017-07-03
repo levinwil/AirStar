@@ -3,6 +3,7 @@ from utils import train_test_split
 import math
 import numpy as np
 import pylab
+from utils import accuracy
 
 ''' A general Logistic Regression model for EMG signal classification'''
 class LR(object):
@@ -129,8 +130,6 @@ class LR(object):
     labels: a 2d array, where x is time and y is the label
     min_size : Int
         the minimum interval for a detection
-    label_value: Any
-        the value you assigned to your labels
     display_feat : Int (0 -> num_features)
         the feature you'd like to display on the graph w/ predictions & labels
     '''
@@ -138,7 +137,6 @@ class LR(object):
                  data,
                  labels,
                  min_size = 130,
-                 label_value = 1,
                  display_feat = 1):
         #predict the remaining data using the generated logistic regression model
         predictions = self.getPredictions(data, min_size = min_size)
@@ -153,14 +151,14 @@ class LR(object):
         pylab.ylim(-1.2, 1.2)
         pylab.show()
         print 'Performance on test data: '
-        precision_recall_f1(np.abs(predictions), np.abs(labels), label_value)
+        accuracy(predictions, labels)
 
 #unit test
 if __name__ == "__main__":
     #loading the data
     import pickle
     #NOTE: you'll probably have to change the file path to get this unit test to run
-    train_data = pickle.load(open("C:/Users/levinwv1/Downloads/4-Seconds-Will-Trial-1.MultFeat"))
+    train_data = pickle.load(open("C:/Users/levinwv1/Downloads/2-Seconds-Will-Trial-1.MultFeat"))
     train_labels = train_data[1]
     train_x = train_data[0]
 
@@ -169,7 +167,7 @@ if __name__ == "__main__":
     lr = LR(train_x, train_labels)
 
     #validation on a completely different data set
-    test_data = pickle.load(open("C:/Users/levinwv1/Downloads/3-Seconds-Will-Trial-1.MultFeat"))
+    test_data = pickle.load(open("C:/Users/levinwv1/Downloads/4-Seconds-Will-Trial-1.MultFeat"))
     test_labels = test_data[1]
     test_x = np.array(test_data[0])
     lr.evaluate(test_x, test_labels, display_feat = 1)
