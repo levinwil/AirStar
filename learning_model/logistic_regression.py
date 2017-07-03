@@ -2,7 +2,6 @@ from sklearn.linear_model import LogisticRegression
 from utils import train_test_split
 import math
 import numpy as np
-from utils import precision_recall_f1
 import pylab
 
 ''' A general Logistic Regression model for EMG signal classification'''
@@ -161,7 +160,7 @@ if __name__ == "__main__":
     #loading the data
     import pickle
     #NOTE: you'll probably have to change the file path to get this unit test to run
-    train_data = pickle.load(open("/Users/williamlevine/Downloads/concat_test.MultFeat"))
+    train_data = pickle.load(open("C:/Users/levinwv1/Downloads/4-Seconds-Will-Trial-1.MultFeat"))
     train_labels = train_data[1]
     train_x = train_data[0]
 
@@ -170,7 +169,7 @@ if __name__ == "__main__":
     lr = LR(train_x, train_labels)
 
     #validation on a completely different data set
-    test_data = pickle.load(open("/Users/williamlevine/Downloads/concat_train.MultFeat"))
+    test_data = pickle.load(open("C:/Users/levinwv1/Downloads/3-Seconds-Will-Trial-1.MultFeat"))
     test_labels = test_data[1]
     test_x = np.array(test_data[0])
     lr.evaluate(test_x, test_labels, display_feat = 1)
