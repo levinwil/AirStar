@@ -6,7 +6,9 @@ from freqDomain import *
 from parse import *
 import numpy as np
 import matplotlib.pyplot as plt
-from analytical import predict
+from analytical import *
+import math
+import time
 
 '''
 A master preprocessing method that includes high pass filtering, low pass
@@ -30,17 +32,42 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
                  band_stop_min_freq = 50, band_stop_max_freq = 60,
                  reject_z_cutoff = 2.5, reject_divide_factor = 4,
                  window = 225):
-
+    an = analytical()
+    mean = 100
+    eeg_data = []
     while(True):
-        data = parse(filePath, num_channels)
+        parsed = parse(filePath, num_channels)
         #keep only the last 2000 lines
-        if np.array(data).shape[1] <= 2000:
-            print "Calibrating"
-            print str(np.array(data).shape[1]/2000.0) + "%"
+        if len(eeg_data) == 0:
+            print "Calibrating. Please hold arm still."
+            print str(np.array(parsed).shape[1]/2060.0) + "%"
+            if np.array(parsed).shape[1] > 2000:
+                if do_high_pass:
+                    data = highPass(parsed, filter_order, high_pass_critical_freq)
+
+                #low pass filter
+                if do_low_pass:
+                    data = lowPass(data, filter_order, low_pass_critical_freq)
+
+                #band stop
+                data = bandStop(data, band_stop_min_freq, band_stop_max_freq)
+
+                #peak rejection
+                data = peakReject(data, reject_z_cutoff, reject_divide_factor, window)
+
+                #apply the Fourier transform
+                data = FFT(data, window)
+                maxes = [np.max(data[0, i]) for i in range(len(data[0]))]
+                new_maxes = []
+                for max in maxes:
+                    if not math.isnan(max):
+                        new_maxes.append(max)
+                mean = np.mean(new_maxes)
+                eeg_data = parsed
         else:
-            lines = data[0:num_channels, -2000:]
-            data = lines
-            #high pass filter
+            length = np.array(parsed).shape[1]
+            eeg_data = np.concatenate((np.array(eeg_data)[:, length:], parsed), axis = 1)
+            data = eeg_data
             if do_high_pass:
                 data = highPass(data, filter_order, high_pass_critical_freq)
 
@@ -79,7 +106,7 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
             two_dimension_data = savgol(two_dimension_data)
 
             #normalize all the channels
-            two_dimension_data = normalize(two_dimension_data)
+            two_dimension_data = normalize(two_dimension_data, mean)
 
             #get rid of nan values
             two_dimension_data = get_rid_nan_values(two_dimension_data)
@@ -87,24 +114,16 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
             for chan in range(num_channels):
                 #get predictions for current timepoint
                 data_2000 = two_dimension_data[chan]
-                predictions = predict(data_2000)
-                plt.plot(data_2000[:, 2])
-                plt.plot(predictions)
-                plt.show()
-                mean_predict = np.mean(predictions[-50:])
+                predictions = an.predict(data_2000)
+                mean_predict = np.mean(predictions[-25:])
                 print 'Prediction on Channel ' + str(chan) + ": " + \
                 str(mean_predict)
+
             #keep only the last 2000 lines
             f = open(filePath, 'w+')
-            f.seek(0)
             f.truncate()
-            string = ""
-            for tp in range(len(lines[0])):
-                string += str(tp)
-                for chan in range(len(lines)):
-                    string += ", " + str(lines[chan][tp])
-                string += "\n"
-            f.write(string)
             f.close()
+            time.sleep(.2)
 
-stream_detect("/Users/williamlevine/Documents/BCI/SavedData/OpenBCI-RAW-2017-07-01_20-46-34.txt")
+
+stream_detect("/Users/williamlevine/Documents/BCI/SavedData/OpenBCI-RAW-2017-07-03_21-33-43.txt")

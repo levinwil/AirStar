@@ -72,7 +72,7 @@ ____________
 data : 3d array
     the normalized data
 '''
-def normalize(data,  background_value, percentile = 20, window = 500):
+def normalize(data, background_value, percentile = 20, window = 500):
     orig_data = np.array(data)
     for chan in range(data.shape[0]):
         for tp in range(window, data.shape[1]):
@@ -108,7 +108,7 @@ data : 3d array
 def savgol(data, window = 2001, max_degree_poly = 5):
     for chan in range(len(data)):
         for feat in range(len(data[chan][0])):
-            data[chan][:, feat] = savgol_filter(data[chan][:, feat],
+            data[chan, :, feat] = savgol_filter(data[chan, :, feat],
                                                 window,
                                                 max_degree_poly)
     return data

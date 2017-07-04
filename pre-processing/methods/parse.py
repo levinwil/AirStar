@@ -11,8 +11,11 @@ def parse(filename, numChannels):
         channelData = []
         for j in range(1, len(data)):
             if len(data[j]) > numChannels:
-                crossChannel = [float(data[j][k].replace(",", "")) for k in range(1, numChannels + 1)]
-                if np.sum(crossChannel) != 0:
-                    channelData.append(float(data[j][i].replace(",","")))
+                try:
+                    crossChannel = [float(data[j][k].replace(",", "")) for k in range(1, numChannels + 1)]
+                    if np.prod(crossChannel) != 0:
+                        channelData.append(float(data[j][i].replace(",","")))
+                except ValueError:
+                    pass
         ret.append(channelData)
     return np.array(ret)
