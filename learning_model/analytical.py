@@ -38,10 +38,7 @@ class analytical(object):
         predictions = []
         for i in range(len(data)):
             if data[i, 0] > 0 and np.abs(data[i, 2]) > self.local_val_thresh:
-                if data[i, 1] > 0:
-                    predictions.append(data[i, 0])
-                else:
-                    predictions.append(data[i, 0])
+                predictions.append(data[i, 0])
             else:
                 predictions.append(0)
         return np.array(predictions)
