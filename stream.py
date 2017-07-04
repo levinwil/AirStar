@@ -22,7 +22,7 @@ filePath : String
     the path to the file you'll be reading/writing from /to
 
 If you are wondering what the others are, please explore the timeDomain
-file in ./methods
+file in ./pre-processing/methods
 
 '''
 def stream_detect(filePath, num_channels = 1, filter_order = 2,
@@ -75,7 +75,8 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
                 #the starting data is the same data we used to find the background_value
                 #value
                 eeg_data = parsed
-        else:
+        #only process/predict if there's a significant change in information
+        elif parsed.shape[1] > 10:
             #basically, we only want to keep 2060 values or so. So we remove the
             #first 'length' values to our 2060-length eeg_data, and add 'length'
             #new values, keeping our eeg_data at 2060-length
@@ -142,7 +143,7 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
             f = open(filePath, 'w+')
             f.truncate()
             f.close()
-            time.sleep(.2)
+            time.sleep(.05)
 
 
-stream_detect("/Users/williamlevine/Documents/BCI/SavedData/OpenBCI-RAW-2017-07-03_22-55-40.txt")
+stream_detect("/Users/williamlevine/Documents/BCI/SavedData/OpenBCI-RAW-2017-07-04_07-31-20.txt")
