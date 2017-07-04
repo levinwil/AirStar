@@ -102,6 +102,7 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
             #peak rejection
             data = peakReject(data, reject_z_cutoff, reject_divide_factor, window)
 
+
             #apply the Fourier transform
             data = FFT(data, window)
             #this is the data we'll be returning. Feature extraction occurs from
@@ -125,23 +126,21 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
             two_dimension_data = get_rid_nan_values(two_dimension_data)
 
             #smooth
-            two_dimension_data = savgol(two_dimension_data)
+            two_dimension_data = savgol(two_dimension_data)[-100:]
 
             #normalize all the channels
             two_dimension_data = normalize(two_dimension_data, mean)
 
-            #get rid of nan values
-            two_dimension_data = get_rid_nan_values(two_dimension_data)
 
             #for each channel, calculate the prediction
             for chan in range(num_channels):
                 #get predictions for current timepoint
                 data_2000 = two_dimension_data[chan]
                 predictions = an.predict(data_2000)
-                mean_predict = np.mean(predictions[-2:])
+                mean_predict = np.mean(predictions[-10:])
                 mean_predictions.append(mean_predict)
                 plt.plot(mean_predictions)
-                plt.pause(0.001)
+                plt.pause(0.0001)
                 plt.clf()
                 if np.abs(mean_predict) > 0:
                     print 'Prediction on Channel ' + str(chan) + ": " + \
@@ -154,5 +153,6 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
             time.sleep(.001)
 
 
-stream_detect("/Users/williamlevine/Documents/BCI/SavedData/OpenBCI-RAW-2017-07-04_10-13-31.txt", \
+
+stream_detect("/Users/williamlevine/Documents/BCI/SavedData/OpenBCI-RAW-2017-07-04_13-16-04.txt", \
 window = 350)
