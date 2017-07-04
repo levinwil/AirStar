@@ -70,7 +70,7 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
                 for max in maxes:
                     if not math.isnan(max):
                         new_maxes.append(max)
-                mean = np.mean(new_maxes) / 3
+                mean = np.mean(new_maxes)
                 print "MEAN: " + str(mean)
                 #the starting data is the same data we used to find the background_value
                 #value
@@ -143,7 +143,7 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
             f = open(filePath, 'w+')
             f.truncate()
             f.close()
-            time.sleep(.05)
+            time.sleep(.01)
 
 
-stream_detect("/Users/williamlevine/Documents/BCI/SavedData/OpenBCI-RAW-2017-07-04_07-31-20.txt")
+stream_detect("/Users/williamlevine/Documents/BCI/SavedData/OpenBCI-RAW-2017-07-04_08-42-07.txt")
