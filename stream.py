@@ -37,6 +37,10 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
     mean = 100
     #the eeg window we'll be exploring
     eeg_data = []
+    #matplotlib ion
+    plt.ion()
+    #for visualization
+    mean_predictions = []
     while(True):
         #the new data we read from file
         parsed = parse(filePath, num_channels)
@@ -134,7 +138,11 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
                 #get predictions for current timepoint
                 data_2000 = two_dimension_data[chan]
                 predictions = an.predict(data_2000)
-                mean_predict = np.mean(predictions[-10:])
+                mean_predict = np.mean(predictions[-2:])
+                mean_predictions.append(mean_predict)
+                plt.plot(mean_predictions)
+                plt.pause(0.001)
+                plt.clf()
                 if np.abs(mean_predict) > 0:
                     print 'Prediction on Channel ' + str(chan) + ": " + \
                     str(mean_predict)
@@ -143,7 +151,8 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
             f = open(filePath, 'w+')
             f.truncate()
             f.close()
-            time.sleep(.01)
+            time.sleep(.001)
 
 
-stream_detect("/Users/williamlevine/Documents/BCI/SavedData/OpenBCI-RAW-2017-07-04_08-42-07.txt")
+stream_detect("/Users/williamlevine/Documents/BCI/SavedData/OpenBCI-RAW-2017-07-04_10-13-31.txt", \
+window = 350)
