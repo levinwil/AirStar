@@ -30,12 +30,12 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
                  high_pass_critical_freq = .1, low_pass_critical_freq = .1,
                  band_stop_min_freq = 50, band_stop_max_freq = 60,
                  reject_z_cutoff = 2.5, reject_divide_factor = 4,
-                 window = 225):
+                 fft_window = 225, sample_window = 50):
     #the analytical model we're using to predict movement
     an = analytical()
     #just a temp value. This is the value of static background FFT
     mean = 100
-    #the eeg window we'll be exploring
+    #the eeg fft_window we'll be exploring
     eeg_data = []
     #matplotlib ion
     plt.ion()
@@ -47,12 +47,15 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
         #if it's still calibrating/finding background
         if len(eeg_data) == 0:
             print "Calibrating. Please hold arm still."
-            print str(np.array(parsed).shape[1]/2060.0) + "%"
+            print str(np.array(parsed).shape[1]/(4000.0)) + "%"
             # if it's getting close to being ready, calculate the mean FFT
             #background noise, then set it equal to mean
-            if np.array(parsed).shape[1] > 2000:
+            if np.array(parsed).shape[1] > (4000.0):
+                data = parsed[:, 2000:]
+                parsed = parsed[:, -sample_window:]
+
                 if do_high_pass:
-                    data = highPass(parsed, filter_order, high_pass_critical_freq)
+                    data = highPass(data, filter_order, high_pass_critical_freq)
 
                 #low pass filter
                 if do_low_pass:
@@ -62,10 +65,11 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
                 data = bandStop(data, band_stop_min_freq, band_stop_max_freq)
 
                 #peak rejection
-                data = peakReject(data, reject_z_cutoff, reject_divide_factor, window)
+                data = peakReject(data, reject_z_cutoff, reject_divide_factor, fft_window)
 
                 #apply the Fourier transform
-                data = FFT(data, window)
+                data = FFT(data, fft_window)
+
                 #the max values of the FFTs at the timepoints
                 maxes = [np.max(data[0, i]) for i in range(len(data[0]))]
                 #just another value to make sure we don't deal with nan's
@@ -74,7 +78,7 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
                 for max in maxes:
                     if not math.isnan(max):
                         new_maxes.append(max)
-                mean = np.mean(new_maxes)
+                mean = 2 * np.mean(new_maxes)
                 print "MEAN: " + str(mean)
                 #the starting data is the same data we used to find the background_value
                 #value
@@ -100,11 +104,11 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
             data = bandStop(data, band_stop_min_freq, band_stop_max_freq)
 
             #peak rejection
-            data = peakReject(data, reject_z_cutoff, reject_divide_factor, window)
+            data = peakReject(data, reject_z_cutoff, reject_divide_factor, fft_window)
 
 
             #apply the Fourier transform
-            data = FFT(data, window)
+            data = FFT(data, fft_window)
             #this is the data we'll be returning. Feature extraction occurs from
             #here down
             two_dimension_data = np.zeros((len(data), len(data[0]), 3))
@@ -113,20 +117,20 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
 
                     #the first feature is simply the max of the FFT
                     two_dimension_data[j][i][0] = np.max(data[j][i])
-                for k in range(2*window, len(data[j])):
+                for k in range(2*fft_window, len(data[j])):
 
                     #the second feature is the tangent slope
-                    two_dimension_data[j][k][1] = ((two_dimension_data[j][k][0] - two_dimension_data[j][k - window / 4][0])/(window / 4))
+                    two_dimension_data[j][k][1] = ((two_dimension_data[j][k][0] - two_dimension_data[j][k - fft_window / 4][0])/(fft_window / 4))
 
                     #the third feature is the timepoint in comparison to its local mean
-                    local = two_dimension_data[j][k - window / 2: k, 0]
+                    local = two_dimension_data[j][k - fft_window / 2: k, 0]
                     two_dimension_data[j][k][2] = (two_dimension_data[j][k][0] - np.mean(local))
 
             #get rid of nan values
             two_dimension_data = get_rid_nan_values(two_dimension_data)
 
             #smooth
-            two_dimension_data = savgol(two_dimension_data)[-100:]
+            two_dimension_data = savgol(two_dimension_data, sample_window - 1)[-100:]
 
             #normalize all the channels
             two_dimension_data = normalize(two_dimension_data, mean)
@@ -150,9 +154,9 @@ def stream_detect(filePath, num_channels = 1, filter_order = 2,
             f = open(filePath, 'w+')
             f.truncate()
             f.close()
-            time.sleep(.001)
+            time.sleep(.1)
 
 
 
-stream_detect("/Users/williamlevine/Documents/BCI/SavedData/OpenBCI-RAW-2017-07-04_13-16-04.txt", \
-window = 350)
+stream_detect("/Users/williamlevine/Documents/BCI/SavedData/OpenBCI-RAW-2017-07-07_19-17-21.txt", \
+fft_window = 350)
