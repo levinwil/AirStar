@@ -1,17 +1,33 @@
+import cv2
 import glob
+import time
 import pickle
 
 import numpy as np
 import tensorflow as tf
 
+from skimage.measure import label
 from random import random, shuffle
+from sklearn.neighbors import KDTree
+from skimage.transform import resize, rotate
+from getHandLabels import open_capture, extract_hand, nothing
 
 EPOCHS = 1
-TRAIN = True
+TRAIN = False
 LEARNING_RATE = .001
 BATCH_SIZE = 16
 DISPLAY_STEP = 10
 
+def open_capture(ignore = []):
+    for i in range(10):
+        if not i in ignore:
+            try:
+                cap = cv2.VideoCapture(i)
+                return cap
+            except:
+                continue
+    print 'Error: Could Not Open Video Capture!'
+    return None
 
 def get_data(path):
     allFiles = glob.glob(path+'/*')
@@ -102,8 +118,8 @@ if __name__ == '__main__':
 
     val, train = get_data('./handData')
 
-    if TRAIN:
-        with tf.Session() as sess:
+    with tf.Session() as sess:
+        if TRAIN:
             sess.run(init)
             for epoch in range(EPOCHS):
                 curStep = 0
@@ -136,3 +152,52 @@ if __name__ == '__main__':
                 total+=1
 
             print 'Test Accuracy: ', correct/float(total)
+
+        else:
+            saver.restore(sess, './models/rps-model-0')
+            cap = open_capture()
+
+            #set up required GUI elements
+            start = time.time()
+
+
+            cv2.namedWindow('Thresh')
+            cv2.createTrackbar('HMin', 'Thresh', 0, 255, nothing)
+            cv2.createTrackbar('SMin', 'Thresh', 0, 255, nothing)
+            cv2.createTrackbar('VMin', 'Thresh', 92, 255, nothing)
+            cv2.createTrackbar('HMax', 'Thresh', 184, 255, nothing)
+            cv2.createTrackbar('SMax', 'Thresh', 55, 255, nothing)
+            cv2.createTrackbar('VMax', 'Thresh', 255, 255, nothing)
+
+            while 1:
+                flag, frame = cap.read()
+
+                dil, handImg = extract_hand(frame,
+                                            cv2.getTrackbarPos('HMin', 'Thresh'),
+                                            cv2.getTrackbarPos('SMin', 'Thresh'),
+                                            cv2.getTrackbarPos('VMin', 'Thresh'),
+                                            cv2.getTrackbarPos('HMax', 'Thresh'),
+                                            cv2.getTrackbarPos('SMax', 'Thresh'),
+                                            cv2.getTrackbarPos('VMax', 'Thresh'))
+
+
+                positiveList = np.where(handImg)
+
+                yMin = np.min(positiveList[0])
+                xMin = np.min(positiveList[1])
+                yMax = np.max(positiveList[0])
+                xMax = np.max(positiveList[1])
+
+                bbox = handImg[yMin:yMax, xMin:xMax]
+
+                scaledBbox = resize(bbox, (256, 256))
+
+                cv2.imshow('scaledBbox', scaledBbox)
+
+                prediction = np.rint(sess.run([y_], feed_dict={x:np.array([scaledBbox])}))
+
+                print prediction
+
+                key = cv2.waitKey(100)
+                if key == 13:
+                    break
